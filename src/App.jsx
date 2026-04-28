@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Outlet } from 'react-router-dom';
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import LandingNavbar from './components/LandingNavbar';
 import AdminSidebar from './components/AdminSidebar';
@@ -10,6 +10,8 @@ import LandingPage from './pages/public/LandingPage';
 import VendorList from './pages/VendorList';
 import OnboardVendorForm from './pages/OnboardVendorForm';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminLogin from './pages/AdminLogin';
+import ChatPrototype from './pages/ChatPrototype';
 
 // Student Page Components
 import VendorMenu from './pages/public/VendorMenu';
@@ -24,12 +26,19 @@ const LandingLayout = () => (
   </>
 );
 
-// Layout for the admin section
-const AdminLayout = () => (
-  <AdminSidebar>
-    <Outlet />
-  </AdminSidebar>
-);
+// Protected Layout for the admin section
+const AdminLayout = () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  return (
+    <AdminSidebar>
+      <Outlet />
+    </AdminSidebar>
+  );
+};
 
 function App() {
   return (
@@ -44,11 +53,17 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/success" element={<OrderSuccess />} />
 
+        {/* Admin Login Route */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
         {/* Admin Flow */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="vendors" element={<VendorList />} />
           <Route path="onboard" element={<OnboardVendorForm />} />
+          <Route path="chat" element={<ChatPrototype />} />
+          {/* Redirect to onboard by default for now */}
+          <Route index element={<Navigate to="onboard" replace />} />
         </Route>
       </Routes>
     </CartProvider>
