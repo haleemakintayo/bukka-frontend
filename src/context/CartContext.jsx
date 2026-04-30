@@ -13,7 +13,7 @@ export const useCart = () => {
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
 
-  const addToCart = (item, vendorId) => {
+  const addToCart = (item, vendorId, vendorName = null) => {
     setCartItems(prev => {
       // Validate we're not ordering from multiple vendors if that's a restriction (optional)
       // For now, let's just add it or increment if it exists
@@ -21,7 +21,7 @@ export const CartProvider = ({ children }) => {
       if (existingItem) {
         return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { ...item, vendorId, quantity: 1 }];
+      return [...prev, { ...item, vendorId, vendorName, quantity: 1 }];
     });
   };
 
