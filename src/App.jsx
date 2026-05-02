@@ -49,7 +49,7 @@ function App() {
         </Route>
         
         {/* Student Flow (No navbar layout to maximize mobile screen real-estate) */}
-        <Route path="/order/:vendor_id" element={<VendorMenu />} />
+        <Route path="/order/:vendorSlug" element={<VendorMenu />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/success" element={<OrderSuccess />} />
 

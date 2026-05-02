@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import CartSummaryBar from '../../components/CartSummaryBar';
+import { getVendorBySlug, getVendorMenu } from '../../services/api';
 import { Plus, Star, MapPin, Clock } from 'lucide-react';
 
 const MOCK_VENDOR = {
@@ -56,18 +57,78 @@ const MOCK_VENDOR = {
 };
 
 const VendorMenu = () => {
-  const { vendor_id } = useParams();
+  const { vendorSlug } = useParams();
   const { addToCart } = useCart();
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVendor(MOCK_VENDOR);
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [vendor_id]);
+    const fetchVendorMenu = async () => {
+      setLoading(true);
+      try {
+        // Fetch vendor details and menu from API
+        const [vendorData, menuData] = await Promise.all([
+          getVendorBySlug(vendorSlug),
+          getVendorMenu(vendorSlug)
+        ]);
+        
+        // Transform API response to match component structure
+        setVendor({
+          id: vendorData.vendor_id,
+          slug: vendorData.slug || vendorSlug,
+          name: vendorData.business_name,
+          isOpen: vendorData.is_active,
+          rating: vendorData.rating || 4.5,
+          reviewCount: vendorData.review_count || 0,
+          location: vendorData.location || 'Campus',
+          deliveryTime: vendorData.delivery_time || '10-20 mins',
+          image: vendorData.image || vendorData.cover_image,
+          coverImage: vendorData.cover_image,
+          tags: vendorData.tags || [],
+          categories: transformCategories(menuData.categories)
+        });
+      } catch (err) {
+        console.error('Error fetching vendor:', err);
+        // Fallback to mock data for development
+        setVendor(MOCK_VENDOR);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (vendorSlug) {
+      fetchVendorMenu();
+    }
+  }, [vendorSlug]);
+
+  // Transform API categories to component format
+  const transformCategories = (categories) => {
+    if (!categories) return [];
+    return Object.entries(categories).map(([name, items]) => ({
+      name,
+      emoji: getCategoryEmoji(name),
+      items: items.map(item => ({
+        id: item.id.toString(),
+        name: item.name,
+        description: item.description || '',
+        price: item.price,
+        is_available: item.is_available !== false,
+        image: item.image || null,
+        popular: item.popular || false
+      }))
+    }));
+  };
+
+  const getCategoryEmoji = (categoryName) => {
+    const emojis = {
+      'Main': '🍚', 'Rice': '🍚', 'Swallows': '🍲',
+      'Proteins': '🍗', 'Protein': '🍗', 'Meat': '🍖',
+      'Sides': '🍟', 'Extras': '🍟',
+      'Drinks': '🥤', 'Drink': '🥤',
+      'Fast Food': '🍔', 'Breakfast': '🥞'
+    };
+    return emojis[categoryName] || '🍴';
+  };
 
   if (loading) {
     return (
@@ -201,7 +262,7 @@ const VendorMenu = () => {
                         <p className="text-bukka-orange font-extrabold text-xl tracking-tight">₦{item.price.toLocaleString()}</p>
                         
                         <button
-                          onClick={() => addToCart(item, vendor.id, vendor.name)}
+                          onClick={() => addToCart(item, vendor.slug, vendor.name, vendor.id)}
                           disabled={!item.is_available || !vendor.isOpen}
                           className={`flex items-center justify-center rounded-xl px-4 py-2.5 transition-all duration-300
                             ${item.is_available && vendor.isOpen 

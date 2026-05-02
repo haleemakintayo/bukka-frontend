@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { adminLogin, getApiErrorMessage } from '../services/api';
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -18,34 +18,18 @@ const AdminLogin = () => {
     setLoading(true);
     setError(null);
     try {
-      // Use form data format for OAuth2 compatible login commonly used with FastAPI
-      const params = new URLSearchParams();
-      params.append('username', formData.username);
-      params.append('password', formData.password);
-      
-      const response = await axios.post('/api/v1/admin/login', params, {
-          headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-          }
-      });
-      const { access_token } = response.data;
+      const response = await adminLogin(formData);
+      const { access_token } = response;
+
       if (access_token) {
         localStorage.setItem('admin_token', access_token);
-        navigate('/admin/onboard');
+        navigate('/admin/vendors');
       } else {
-         localStorage.setItem('admin_token', 'mock_token_for_prototype');
-         navigate('/admin/onboard');
+        setError('Login succeeded but no access token was returned.');
       }
     } catch (err) {
-       console.error('Login error:', err);
-       setError(err.response?.data?.detail || 'Invalid credentials or server error.');
-       
-       // Fallback for frontend UI prototyping without backend
-       if (err.message === 'Network Error' || String(err.message).includes('404')) {
-           console.log("Mocking login for prototype...");
-           localStorage.setItem('admin_token', 'mock_token_for_prototype');
-           navigate('/admin/onboard');
-       }
+      console.error('Login error:', err);
+      setError(getApiErrorMessage(err, 'Invalid credentials or server error.'));
     } finally {
       setLoading(false);
     }

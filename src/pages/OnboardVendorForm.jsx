@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Trash, Plus, CheckCircle, ExternalLink, QrCode, Smartphone, Link2, Globe } from 'lucide-react';
+import { getApiErrorMessage, onboardVendor, resolveAssetUrl } from '../services/api';
 
 const slugify = (text) => {
   return text
@@ -16,6 +16,7 @@ const OnboardVendorForm = () => {
   const [formData, setFormData] = useState({
     business_name: '',
     owner_name: '',
+    whatsapp_number: '',
     slug: '',
     bankName: '',
     accountNumber: '',
@@ -85,36 +86,24 @@ const OnboardVendorForm = () => {
     const payload = {
       business_name: formData.business_name,
       owner_name: formData.owner_name,
+      whatsapp_number: formData.whatsapp_number,
       slug: formData.slug,
-      bank_details: {
-        bank_name: formData.bankName,
-        account_number: formData.accountNumber
-      },
+      bankName: formData.bankName,
+      accountNumber: formData.accountNumber,
       email: formData.email,
       password: formData.password,
       menu_items: validMenu,
     };
 
     try {
-      const token = localStorage.getItem('admin_token');
-      if (token === 'mock_token_for_prototype') {
-        console.log("Mocking vendor onboarding for prototype...", payload);
-        await new Promise(r => setTimeout(r, 1000));
-        setSuccessData({
-          vendor_id: "VEN-" + Math.floor(1000 + Math.random() * 9000),
-          slug: payload.slug,
-          qr_image_url: "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://bukkaai.com.ng/order/" + payload.slug,
-          pairing_code: Math.random().toString(36).substring(2, 10).toUpperCase()
-        });
-      } else {
-        const response = await axios.post('/api/v1/admin/vendors/onboard', payload, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setSuccessData(response.data);
-      }
+      const response = await onboardVendor(payload);
+      setSuccessData({
+        ...response,
+        submitted_slug: payload.slug || slugify(payload.business_name),
+      });
 
       setFormData({
-        business_name: '', owner_name: '', slug: '',
+        business_name: '', owner_name: '', whatsapp_number: '', slug: '',
         bankName: '', accountNumber: '', email: '', password: ''
       });
       setMenuItems([{ name: '', price: '', category: '' }]);
@@ -122,12 +111,7 @@ const OnboardVendorForm = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Error submitting form:', err);
-      if (err.response?.data?.detail) {
-        const detail = err.response.data.detail;
-        setError(Array.isArray(detail) ? detail.map(e => e.msg).join(', ') : detail);
-      } else {
-        setError('An unexpected error occurred while communicating with the server.');
-      }
+      setError(getApiErrorMessage(err, 'An unexpected error occurred while communicating with the server.'));
     } finally {
       setLoading(false);
     }
@@ -135,6 +119,9 @@ const OnboardVendorForm = () => {
 
   const inputClassName =
     'mt-1 block w-full rounded-xl border border-gray-200 dark:border-gray-700/80 bg-white dark:bg-bukka-dark-surface px-4 py-2.5 text-sm text-gray-900 dark:text-bukka-soft-white placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:border-bukka-cyan focus:ring-bukka-cyan focus:outline-none focus:ring-1 transition-colors';
+
+  const storefrontSlug = successData?.slug || successData?.submitted_slug;
+  const qrImageUrl = resolveAssetUrl(successData?.qr_image_url);
 
   // ─── Success State ─────────────────────────────────────────────────
   if (successData) {
@@ -151,16 +138,22 @@ const OnboardVendorForm = () => {
             {/* QR Panel */}
             <div className="bg-gray-50 dark:bg-bukka-dark-surface p-6 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center text-center">
               <QrCode size={32} className="text-gray-400 mb-3" />
-              <img
-                src={successData.qr_image_url || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://bukkaai.com.ng/order/${successData.slug}`}
-                alt="Store QR"
-                className="w-36 h-36 bg-white p-2 rounded-lg shadow-sm mb-4"
-              />
+              {qrImageUrl && (
+                <img
+                  src={qrImageUrl}
+                  alt="Store QR"
+                  className="w-36 h-36 bg-white p-2 rounded-lg shadow-sm mb-4"
+                />
+              )}
               <h3 className="font-bold text-gray-900 dark:text-white mb-1">Storefront QR</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Print this and place it on tables</p>
-              <a href={`/order/${successData.slug}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-bold text-bukka-cyan hover:underline">
-                bukkaai.com.ng/order/{successData.slug} <ExternalLink size={14} />
-              </a>
+              {storefrontSlug ? (
+                <a href={`/order/${storefrontSlug}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-bold text-bukka-cyan hover:underline">
+                  bukkaai.com.ng/order/{storefrontSlug} <ExternalLink size={14} />
+                </a>
+              ) : (
+                <p className="text-xs text-gray-500 dark:text-gray-400">The storefront slug will appear in the vendor directory after provisioning.</p>
+              )}
             </div>
 
             {/* Pairing Panel */}
@@ -172,14 +165,25 @@ const OnboardVendorForm = () => {
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-wider mb-4">
                   Action Required
                 </span>
-                <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-xl">Device Pairing Code</h3>
-                <div className="bg-white dark:bg-bukka-dark-surface font-mono text-3xl font-bold tracking-widest text-center py-4 rounded-lg shadow-inner mb-4 text-blue-600 dark:text-blue-400">
-                  {successData.pairing_code}
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
-                  To start receiving orders, the vendor must message our central bot on WhatsApp (or Telegram) and send this exact code:<br /><br />
-                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700 font-mono text-gray-900 dark:text-white font-bold select-all">/link {successData.pairing_code}</span>
-                </p>
+                {successData.pairing_code ? (
+                  <>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-xl">Device Pairing Code</h3>
+                    <div className="bg-white dark:bg-bukka-dark-surface font-mono text-3xl font-bold tracking-widest text-center py-4 rounded-lg shadow-inner mb-4 text-blue-600 dark:text-blue-400">
+                      {successData.pairing_code}
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                      To start receiving orders, the vendor must message our central bot on WhatsApp (or Telegram) and send this exact code:<br /><br />
+                      <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700 font-mono text-gray-900 dark:text-white font-bold select-all">/link {successData.pairing_code}</span>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-xl">Provisioning Complete</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                      This backend response did not include a pairing code, so the vendor can now be managed from the directory using the generated vendor ID.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -216,7 +220,7 @@ const OnboardVendorForm = () => {
           <div className="space-y-6">
             {/* Business Profile & Auth Card */}
             <div className="bg-white dark:bg-bukka-card-surface rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm transition-colors">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-bukka-soft-white border-b border-gray-100 dark:border-gray-800 pb-3">Business Profile & Auth</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-bukka-soft-white border-b border-gray-100 dark:border-gray-800 pb-3">Business Profile</h3>
               <div className="mt-5 space-y-5">
                 <div>
                   <label htmlFor="onboard_business_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Business Name</label>
@@ -230,7 +234,7 @@ const OnboardVendorForm = () => {
                       <span className="flex items-center gap-1.5"><Link2 size={14} className="text-bukka-cyan" /> Public Store Link (Slug)</span>
                     </label>
                   </div>
-                  <input type="text" name="slug" id="onboard_slug" value={formData.slug} onChange={handleFormChange} required placeholder="e.g. iya-basira-amala" autoComplete="off" className={inputClassName} />
+                  <input type="text" name="slug" id="onboard_slug" value={formData.slug} onChange={handleFormChange} placeholder="e.g. iya-basira-amala" autoComplete="off" className={inputClassName} />
                   {formData.slug && (
                     <div className="mt-2 flex items-center gap-2 text-xs bg-gray-50 dark:bg-bukka-dark-surface border border-gray-100 dark:border-gray-700/50 rounded-lg px-3 py-2">
                       <Globe size={12} className="text-gray-400 shrink-0" />
@@ -247,13 +251,18 @@ const OnboardVendorForm = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="onboard_email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Vendor Email</label>
-                    <input type="email" name="email" id="onboard_email" value={formData.email} onChange={handleFormChange} required autoComplete="off" className={inputClassName} />
+                    <label htmlFor="onboard_whatsapp_number" className="block text-sm font-medium text-gray-700 dark:text-gray-300">WhatsApp Number</label>
+                    <input type="tel" name="whatsapp_number" id="onboard_whatsapp_number" value={formData.whatsapp_number} onChange={handleFormChange} required autoComplete="off" placeholder="2348012345678" className={inputClassName} />
                   </div>
                   <div>
-                    <label htmlFor="onboard_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Initial Password</label>
-                    <input type="password" name="password" id="onboard_password" value={formData.password} onChange={handleFormChange} required autoComplete="new-password" className={inputClassName} />
+                    <label htmlFor="onboard_email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Vendor Email (Optional)</label>
+                    <input type="email" name="email" id="onboard_email" value={formData.email} onChange={handleFormChange} autoComplete="off" className={inputClassName} />
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="onboard_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Initial Password (Optional)</label>
+                  <input type="password" name="password" id="onboard_password" value={formData.password} onChange={handleFormChange} autoComplete="new-password" className={inputClassName} />
                 </div>
               </div>
             </div>
