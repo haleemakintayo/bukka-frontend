@@ -18,12 +18,22 @@ const AdminLogin = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await adminLogin(formData);
+      // Client‑side validation: ensure fields are not empty after trimming
+      const trimmedUsername = formData.username.trim();
+      const trimmedPassword = formData.password;
+      if (!trimmedUsername || !trimmedPassword) {
+        setError('Both username and password are required.');
+        setLoading(false);
+        return;
+      }
+
+      const response = await adminLogin({ username: trimmedUsername, password: trimmedPassword });
       const { access_token } = response;
 
       if (access_token) {
-        localStorage.setItem('admin_token', access_token);
-        navigate('/admin/vendors');
+        // Store token in sessionStorage for better XSS resistance
+        sessionStorage.setItem('admin_token', access_token);
+        navigate('/admin/dashboard'); // redirect after login
       } else {
         setError('Login succeeded but no access token was returned.');
       }

@@ -24,23 +24,23 @@ export const resolveAssetUrl = (path) => (path ? buildApiUrl(path) : '');
 
 export const getApiErrorMessage = (error, fallbackMessage = 'Something went wrong while contacting the server.') => {
   const detail = error?.response?.data?.detail;
+  const errors = error?.response?.data?.errors;
 
   if (Array.isArray(detail)) {
     return detail.map((item) => item?.msg || item).filter(Boolean).join(', ');
   }
-
+  if (Array.isArray(errors)) {
+    return errors.map((e) => e?.msg || e).filter(Boolean).join(', ');
+  }
   if (typeof detail === 'string' && detail.trim()) {
     return detail;
   }
-
   if (typeof error?.response?.data?.message === 'string' && error.response.data.message.trim()) {
     return error.response.data.message;
   }
-
   if (typeof error?.message === 'string' && error.message.trim() && error.message !== 'Network Error') {
     return error.message;
   }
-
   return fallbackMessage;
 };
 
@@ -80,9 +80,9 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests if available
+// Add auth token to requests if available (sessionStorage for better XSS resistance)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -96,7 +96,7 @@ api.interceptors.response.use(
     const requestUrl = error?.config?.url || '';
 
     if (error.response?.status === 401 && requestUrl.includes('/admin/')) {
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      sessionStorage.removeItem(ADMIN_TOKEN_KEY);
       if (window.location.pathname !== '/admin/login') {
         window.location.href = '/admin/login';
       }
@@ -197,7 +197,11 @@ export const getOrder = async (orderId) => {
  * @param {object} credentials - username and password
  */
 export const adminLogin = async (credentials) => {
-  const response = await api.post(`${API_PREFIX}/admin/login`, credentials);
+  const payload = {
+    username: credentials.username?.trim(),
+    password: credentials.password,
+  };
+  const response = await api.post(`${API_PREFIX}/admin/login`, payload);
   return response.data;
 };
 
