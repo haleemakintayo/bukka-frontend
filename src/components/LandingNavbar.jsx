@@ -45,12 +45,7 @@ const LandingNavbar = () => {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <Link 
-              to="/admin/dashboard" 
-              className="hidden sm:block text-sm font-semibold text-gray-600 dark:text-bukka-soft-white hover:text-bukka-cyan transition-colors"
-            >
-              Vendor Login
-            </Link>
+
             <button className="bg-bukka-orange text-white hover:opacity-90 font-bold rounded-full transition-all duration-200 shadow-md hover:shadow-lg px-6 py-2.5 text-sm">
               Join the Beta
             </button>

@@ -23,7 +23,7 @@ const AdminSidebar = ({ children }) => {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('admin_token');
+    sessionStorage.removeItem('admin_token');
     navigate('/admin/login');
   };
 

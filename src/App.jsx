@@ -28,7 +28,7 @@ const LandingLayout = () => (
 
 // Protected Layout for the admin section
 const AdminLayout = () => {
-  const token = localStorage.getItem('admin_token');
+  const token = sessionStorage.getItem('admin_token');
   if (!token) {
     return <Navigate to="/admin/login" replace />;
   }

@@ -197,11 +197,15 @@ export const getOrder = async (orderId) => {
  * @param {object} credentials - username and password
  */
 export const adminLogin = async (credentials) => {
-  const payload = {
-    username: credentials.username?.trim(),
-    password: credentials.password,
-  };
-  const response = await api.post(`${API_PREFIX}/admin/login`, payload);
+  // Backend expects application/x-www-form-urlencoded (OAuth2 password flow)
+  const formBody = new URLSearchParams({
+    username: credentials.username?.trim() ?? '',
+    password: credentials.password ?? '',
+  });
+
+  const response = await api.post(`${API_PREFIX}/admin/login`, formBody, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
   return response.data;
 };
 
