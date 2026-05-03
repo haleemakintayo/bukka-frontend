@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Copy, ExternalLink, Link2, Plus, QrCode, RefreshCw, Search, Users } from 'lucide-react';
 import { getAdminVendors, getApiErrorMessage, getVendorQR, resolveAssetUrl } from '../services/api';
+import VendorDetailPanel from '../components/VendorDetailPanel';
 
 const VendorList = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const VendorList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedSlug, setCopiedSlug] = useState(null);
   const [qrLoadingSlug, setQrLoadingSlug] = useState(null);
+  const [selectedVendorId, setSelectedVendorId] = useState(null);
 
   const fetchVendors = async () => {
     setLoading(true);
@@ -151,7 +153,8 @@ const VendorList = () => {
           {filteredVendors.map((vendor) => (
             <div
               key={vendor.vendor_id || vendor.slug}
-              className="bg-white dark:bg-bukka-card-surface border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm transition-all hover:shadow-md group"
+              onClick={() => setSelectedVendorId(vendor.id ?? vendor.vendor_id)}
+              className="bg-white dark:bg-bukka-card-surface border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm transition-all hover:shadow-md hover:border-[#2CD6EB]/40 hover:ring-1 hover:ring-[#2CD6EB]/20 cursor-pointer group"
             >
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div className="min-w-0">
@@ -232,6 +235,16 @@ const VendorList = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Vendor Detail Slide-over Panel */}
+      {selectedVendorId && (
+        <VendorDetailPanel
+          vendorId={selectedVendorId}
+          onClose={() => setSelectedVendorId(null)}
+          onDeleted={fetchVendors}
+          onUpdated={fetchVendors}
+        />
       )}
     </div>
   );
