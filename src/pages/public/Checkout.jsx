@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { usePaystackPayment } from 'react-paystack';
-import { createOrder, getApiErrorMessage, verifyPayment } from '../../services/api';
+import { publicService } from '../../services/publicService';
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MessageCircle, ShieldCheck, Clock } from 'lucide-react';
 
 const formatWhatsappNumber = (value) => {
@@ -52,7 +52,7 @@ const Checkout = () => {
   const onSuccess = async (reference) => {
     try {
       // Verify payment with backend
-      await verifyPayment(reference.reference);
+      await publicService.verifyOrderPayment(reference.reference);
       
       clearCart();
       navigate('/success', { state: { reference: reference.reference } });
@@ -89,7 +89,7 @@ const Checkout = () => {
       const notes = [orderNotes.trim(), `WhatsApp: ${normalizedWhatsapp}`].filter(Boolean).join(' | ');
 
       // Create order on backend first
-      await createOrder({
+      await publicService.createOrder({
         vendor_slug: cartItems[0]?.vendorSlug,
         items: cartItems.map(item => ({
           menu_item_id: item.id,
@@ -104,7 +104,8 @@ const Checkout = () => {
       initializePayment(onSuccess, onClose);
     } catch (err) {
       console.error('Order creation failed:', err);
-      alert(getApiErrorMessage(err, 'We could not create your order right now. Please try again.'));
+      const errorMsg = err.response?.data?.detail || err.response?.data?.message || 'We could not create your order right now. Please try again.';
+      alert(errorMsg);
       setIsProcessing(false);
     }
   };

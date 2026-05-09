@@ -1,298 +1,264 @@
-# Bukka AI - Multi-Vendor Architecture Technical Breakdown
+# Bukka AI Multi-Vendor Architecture
 
-## Overview
+This document explains how the current multi-vendor backend is wired, what the production deployment is doing today, and where the known implementation gaps are.
 
-Bukka AI is a multi-vendor food ordering platform that supports multiple restaurants/vendors through a unified Telegram and WhatsApp chatbot interface. Each vendor has their own menu, inventory, and order management system.
+Last reconciled with code and production: `2026-05-04`
 
----
+## Routing Overview
 
-## Architecture Diagram
+The FastAPI router stack is defined in `app/api/api.py`.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Messaging Platforms                       │
-│  ┌─────────────────┐              ┌─────────────────┐           │
-│  │    Telegram     │              │    WhatsApp     │           │
-│  └────────┬────────┘              └────────┬────────┘           │
-└───────────┼──────────────────────────────┼──────────────────────┘
-            │                              │
-            ▼                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      API Layer (FastAPI)                        │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
-│  │ /telegram/webhook│  │ /whatsapp/webhook│  │   /auth/*      │  │
-│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  │
-└───────────┼──────────────────────┼──────────────────────┬────────┘
-            │                      │                      │
-            ▼                      ▼                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Service Layer (Business Logic)               │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
-│  │  chat_manager   │  │  vendor_service │  │   ai_tools      │  │
-│  │  (conversation) │  │  (vendor ops)   │  │   (AI/LLM)      │  │
-│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  │
-└───────────┼──────────────────────┼──────────────────────┼──────────┘
-            │                      │                      │
-            ▼                      ▼                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      Data Layer (SQLAlchemy)                   │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │                    PostgreSQL Database                    │  │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐      │  │
-│  │  │ vendors │ │  users  │ │  orders  │ │messages │      │  │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘      │  │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐      │  │
-│  │  │menu_items│ │user_sessions│ │accounts│ │stock_   │      │  │
-│  │  │         │ │          │ │         │ │movements│      │  │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘      │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-```
+- `/api/v1/admin/login`
+- `/api/v1/admin/refresh`
+- `/api/v1/admin/register`
+- `/api/v1/admin/vendors/onboard`
+- `/api/v1/admin/vendors`
+- `/api/v1/admin/vendors/{id}`
+- `/api/v1/admin/vendors/{id}` with `PATCH`
+- `/api/v1/admin/vendors/{id}` with `DELETE`
+- `/api/v1/vendors/{slug}`
+- `/api/v1/vendors/{slug}/menu`
+- `/api/v1/vendors/{slug}/qr`
+- `/api/v1/orders`
+- `/api/v1/orders/verify`
+- `/api/v1/orders/{order_id}`
+- `/api/v1/telegram/webhook`
+- `/api/v1/webhook`
+- `/api/v1/demo/chats`
+- `/api/v1/demo/reset`
 
----
+## Core Entities
 
-## Database Schema
+### `vendors`
 
-### Core Tables
+Current ORM fields:
 
-| Table | Purpose | Key Fields |
-|-------|---------|------------|
-| **vendors** | Multi-vendor registry | `id`, `vendor_id`, `slug`, `business_name`, `owner_name`, `whatsapp_number`, `telegram_chat_id`, `bank_details` |
-| **users** | Customer profiles | `id`, `phone_number`, `name` |
-| **orders** | Order records | `id`, `user_id`, `vendor_id`, `items`, `total_price`, `status` |
-| **messages** | Chat history | `id`, `platform`, `contact_id`, `direction`, `body`, `timestamp` |
-| **menu_items** | Vendor menu catalog | `id`, `vendor_id`, `name`, `category`, `price`, `is_available`, `stock_qty`, `reorder_level` |
-| **user_sessions** | Multi-vendor session tracking | `id`, `user_id`, `active_vendor_id`, `last_interaction_at` |
-| **accounts** | Vendor owner auth | `id`, `email`, `hashed_password`, `role`, `vendor_id`, `is_active` |
-| **processed_webhook_events** | Deduplication | `id`, `platform`, `external_event_id`, `claimed_at` |
-| **stock_movements** | Inventory tracking | `id`, `item_id`, `movement_type`, `qty`, `reason`, `actor_platform`, `actor_id`, `timestamp` |
+- `id`
+- `vendor_id`
+- `slug`
+- `business_name`
+- `owner_name`
+- `whatsapp_number`
+- `telegram_chat_id`
+- `bank_details`
+- `pairing_code`
+- `is_active`
+- `rating`
+- `hours`
+- `location`
+- `image_url`
+- `description`
 
----
+Important note:
 
-## Multi-Vendor Session Management
+- the admin vendor detail response model expects `created_at`, but the ORM model does not currently define it
 
-### How It Works
+### `menu_items`
 
-1. **User starts a session** with a vendor:
-   ```python
-   set_active_user_session(db, user_id=4, vendor_id=1)
-   ```
+Current ORM fields:
 
-2. **System tracks active vendor** per user:
-   ```python
-   session = get_active_user_session(db, user_id=4)
-   # Returns: UserSession(user_id=4, active_vendor_id=1, ...)
-   ```
+- `id`
+- `vendor_id`
+- `name`
+- `category`
+- `price`
+- `is_available`
+- `stock_qty`
+- `reorder_level`
 
-3. **Session expires after 2 hours** of inactivity:
-   ```python
-   if current_time - session.last_interaction_at > two_hours_ms:
-       session.active_vendor_id = None  # Clear session
-   ```
+Important note:
 
-4. **All subsequent operations** are scoped to the active vendor:
-   - Menu lookups are filtered by `vendor_id`
-   - Orders are created with the active `vendor_id`
-   - Inventory checks are vendor-specific
+- the public menu response model expects `description`, but the ORM model does not currently define it
 
-### Session Flow Diagram
+### `accounts`
 
-```
-User sends message
-       │
-       ▼
-┌──────────────────┐
-│ Check user_session│
-│ for active_vendor│
-└────────┬─────────┘
-         │
-    ┌────┴────┐
-    │         │
- No session  Has session
-    │         │
-    ▼         ▼
-┌─────────┐ ┌─────────────────┐
-│Prompt   │ │Use active_vendor │
-│to select│ │for all operations│
-│vendor   │ └─────────────────┘
-└─────────┘
-```
+Used for vendor-owner login and admin access.
 
----
+### `orders`
 
-## Vendor Identification
+Used for checkout, but the payment flow is still prototype-grade and should not yet be treated as a hardened commerce implementation.
 
-### Via Telegram Chat ID
-```python
-vendor = db.query(Vendor).filter(
-    Vendor.telegram_chat_id == str(telegram_user_id)
-).first()
-```
+## Vendor Lifecycle
 
-### Via WhatsApp Number
-```python
-vendor = db.query(Vendor).filter(
-    Vendor.whatsapp_number == clean_number
-).first()
-```
+### 1. Vendor onboarding
 
-### Via Vendor Slug (URL-friendly)
-```python
-vendor = db.query(Vendor).filter(
-    Vendor.slug == "vendor-slug"
-).first()
-```
+The admin onboarding route:
 
----
+- creates the vendor record
+- creates the owner account
+- seeds menu items
+- generates a `pairing_code`
+- generates a QR entry URL and QR image
 
-## API Endpoints
+The route currently depends on environment-driven entry URL generation:
 
-### Webhook Endpoints
-| Endpoint | Platform | Purpose |
-|----------|----------|---------|
-| `POST /api/v1/telegram/webhook` | Telegram | Receive messages from Telegram bot |
-| `GET /api/v1/webhook` | WhatsApp | Verify Meta webhook challenge |
-| `POST /api/v1/webhook` | WhatsApp | Receive messages from WhatsApp Business API |
+- Telegram mode requires `TELEGRAM_BOT_USERNAME`
+- WhatsApp mode requires `OWNER_PHONE`
 
-### Vendor Management
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `POST /api/v1/admin/vendors/onboard` | POST | Register new vendor |
-| `GET /api/v1/admin/vendors` | GET | List all vendors |
-| `GET /api/v1/admin/vendors/{id}` | GET | Get vendor by ID |
-| `PATCH /api/v1/admin/vendors/{id}` | PATCH | Update vendor |
-| `DELETE /api/v1/admin/vendors/{id}` | DELETE | Remove vendor |
+If those env values are missing, onboarding fails before commit.
 
-### Public Vendor Endpoints
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `GET /api/v1/vendors/{slug}` | GET | Get vendor details |
-| `GET /api/v1/vendors/{slug}/menu` | GET | Get vendor menu |
-| `GET /api/v1/vendors/{slug}/qr` | GET | Get vendor QR code |
+### 2. Vendor device pairing
 
-### Order Endpoints
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `POST /api/v1/orders` | POST | Create new order |
-| `POST /api/v1/orders/verify` | POST | Verify payment |
-| `GET /api/v1/orders/{order_id}` | GET | Get order details |
+Pairing is implemented in the bot flow, not in the frontend.
 
-### Authentication
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `POST /api/v1/admin/login` | POST | Admin login |
+Expected flow:
 
----
+1. Admin receives `pairing_code` from onboarding.
+2. Vendor sends `/link <pairing_code>` to the bot.
+3. Backend looks up the vendor by `pairing_code`.
+4. Backend stores `telegram_chat_id` or `whatsapp_number`.
+5. Backend clears `pairing_code`.
 
-## Key Service Modules
+Operational consequence:
 
-### chat_manager.py
-- `process_message()` - Main message handler
-- `handle_vendor_selection()` - Vendor picker flow
-- `create_order_from_cart()` - Order creation
+- any public exposure of `pairing_code` is a security issue
 
-### vendor_service.py
-- `get_active_user_session()` - Get current vendor for user
-- `set_active_user_session()` - Set active vendor
-- `get_vendor_menu_items()` - Get vendor's menu
-- `resolve_vendor_product()` - Fuzzy product matching
+### 3. Customer storefront entry
 
-### ai_tools.py
-- `classify_intent()` - NLU intent classification
-- `extract_order_details()` - Parse order from message
-- `generate_response()` - AI response generation
+Customers enter the vendor flow by slug:
 
----
+- Telegram deep-link: `/start <vendor-slug>`
+- WhatsApp message ref: `[ref:<vendor-slug>]`
 
-## Migration History
+That slug then drives:
 
-```
-98df6bb1d7c1 - Initial tables (users, orders)
-    │
-    ▼
-c315aaec8536 - Messages table
-    │
-    ▼
-d8e9f0a1b2c3 - Vendors table [NEW]
-    │
-    ▼
-37bc529ad715 - Menu items
-    │
-    ▼
-8e5c1d2a9f44 - Processed webhook events
-    │
-    ▼
-f4b2c8d91a7e - Convert money columns to integer
-    │
-    ▼
-2a1d9e7c6b34 - Stock tracking tables
-    │
-    ▼
-6d5f8a7b9c21 - Add telegram_chat_id to vendors
-    │
-    ▼
-b1c2d3e4f5a6 - Add slug to vendors
-    │
-    ▼
-e9f0a1b2c3d4 - User sessions & accounts [NEW] ◄── HEAD
-```
+- public vendor details
+- public menu retrieval
+- QR generation
+- order creation
 
----
+## Storefront Flow
 
-## Environment Variables
+### Public vendor details
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@host:5432/db` |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot API token | `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11` |
-| `WHATSAPP_TOKEN` | WhatsApp Business API token | `EAAC...` |
-| `OPENAI_API_KEY` | OpenAI API key for LLM | `sk-...` |
-| `REDIS_URL` | Redis cache connection | `redis://localhost:6379` |
+Route: `GET /api/v1/vendors/{slug}`
 
----
+Current state:
 
-## Deployment (Heroku)
+- implemented
+- works live
+- repository contract no longer exposes `pairing_code`
+- production still leaked `pairing_code` on `2026-05-04` before redeploy
 
-### Automatic Migration
-Heroku automatically runs pending Alembic migrations on deploy:
-```bash
-git push heroku main
-```
+### Public vendor menu
 
-### Manual Migration (if needed)
-```bash
-heroku run alembic upgrade head --app bukka-ai-backend
-```
+Route: `GET /api/v1/vendors/{slug}/menu`
 
-### Check Migration Status
-```bash
-heroku run alembic current --app bukka-ai-backend
-```
+Current state:
 
----
+- fixed in repository code with a matching `menu_items.description` field and migration
+- production was broken live with `500` on `2026-05-04` before migration and redeploy
 
-## Current Issues & Fixes
+Frontend integration note:
 
-### 1. Missing user_sessions Table
-- **Error**: `UndefinedTable: relation "user_sessions" does not exist`
-- **Fix**: Run `heroku run alembic upgrade head --app bukka-ai-backend`
-- **Status**: Migration `e9f0a1b2c3d4` creates this table
+- any frontend fallback to mock vendor/menu data can mask this backend failure and should not be used in production mode
 
-### 2. Multiple Head Revisions
-- **Error**: `Multiple head revisions are present`
-- **Cause**: Conflicting migration chains
-- **Fix**: Delete duplicate migration files, keep single chain
+### Public vendor QR
 
----
+Route: `GET /api/v1/vendors/{slug}/qr`
 
-## Future Enhancements
+Current state:
 
-1. **Vendor Analytics Dashboard** - Sales per vendor
-2. **Inventory Alerts** - Low stock notifications
-3. **Payment Integration** - Flutterwave/Stripe
-4. **Order Status Webhooks** - Real-time status updates
-5. **Multi-language Support** - Hausa, Yoruba, Igbo
+- implemented in code
+- broken live because production is in Telegram mode without `TELEGRAM_BOT_USERNAME`
 
----
+## Admin Vendor Flow
 
-*Last Updated: May 1, 2026*
+### Vendor directory
+
+Route: `GET /api/v1/admin/vendors`
+
+Current state:
+
+- implemented
+- verified working live
+
+### Vendor detail
+
+Route: `GET /api/v1/admin/vendors/{id}`
+
+Current state:
+
+- fixed in repository code with a matching `vendors.created_at` field and migration
+- production was broken live with `500` on `2026-05-04` before migration and redeploy
+
+## Orders and Payment Flow
+
+The order routes exist, but there are still important prototype constraints:
+
+- `POST /api/v1/orders` uses a placeholder `user_id = 1`
+- `delivery_address` and `notes` are returned but not persisted on the order model
+- frontend-supplied `unit_price` is trusted
+- `POST /api/v1/orders/verify` marks the first pending order as paid instead of resolving by stored transaction reference
+
+This means the order flow is available for development integration, but it is not yet a production-safe payment implementation.
+
+## Production Verification Snapshot
+
+Verified on `2026-05-04` against `https://bukka-ai-backend-523632194f78.herokuapp.com`
+
+| Route | Live result | Notes |
+|------|-------------|-------|
+| `POST /api/v1/admin/login` | Working | Requires form-urlencoded body |
+| `GET /api/v1/admin/vendors` | Working | Returns current vendor directory |
+| `GET /api/v1/admin/vendors/{id}` | `500` | Broken by `created_at` mismatch |
+| `GET /api/v1/vendors/{slug}` | Working | Publicly leaks `pairing_code` |
+| `GET /api/v1/vendors/{slug}/menu` | `500` | Broken by `description` mismatch |
+| `GET /api/v1/vendors/{slug}/qr` | `500` | Broken by missing `TELEGRAM_BOT_USERNAME` |
+
+## Required Environment Variables
+
+### Core
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `REFRESH_JWT_SECRET`
+
+### Admin
+
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+
+### Telegram mode
+
+- `OWNER_PLATFORM=telegram`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_WEBHOOK_SECRET`
+- `TELEGRAM_BOT_USERNAME`
+
+### WhatsApp mode
+
+- `OWNER_PLATFORM=whatsapp`
+- `OWNER_PHONE`
+- `WHATSAPP_VERIFY_TOKEN`
+- `WHATSAPP_APP_SECRET`
+- `WHATSAPP_PHONE_ID`
+- `META_API_TOKEN`
+
+## Gaps to Fix in Code
+
+### Critical
+
+- deploy the public `pairing_code` removal
+- rotate any exposed live admin credentials and bot secrets
+
+### High
+
+- run the migration and deploy the `menu_items.description` fix
+- run the migration and deploy the `vendors.created_at` fix
+- fix production QR env config for the selected owner platform
+
+### Medium
+
+- harden order creation and payment verification
+- stop trusting frontend-supplied `unit_price`
+- persist delivery metadata if it is part of the intended order contract
+
+## Documentation Maintenance Rule
+
+When onboarding, pairing, public vendor, admin vendor, or order behavior changes, update both:
+
+- `api.md`
+- `MULTI_VENDOR_ARCHITECTURE.md`
+
+in the same change set as the code.

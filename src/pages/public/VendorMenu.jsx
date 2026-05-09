@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import CartSummaryBar from '../../components/CartSummaryBar';
-import { getVendorBySlug, getVendorMenu } from '../../services/api';
+import { publicService } from '../../services/publicService';
 import { Plus, Star, MapPin, Clock } from 'lucide-react';
 
 const MOCK_VENDOR = {
@@ -68,8 +68,8 @@ const VendorMenu = () => {
       try {
         // Fetch vendor details and menu from API
         const [vendorData, menuData] = await Promise.all([
-          getVendorBySlug(vendorSlug),
-          getVendorMenu(vendorSlug)
+          publicService.getVendorBySlug(vendorSlug),
+          publicService.getVendorMenuBySlug(vendorSlug)
         ]);
         
         // Transform API response to match component structure

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash, Plus, CheckCircle, ExternalLink, QrCode, Smartphone, Link2, Globe } from 'lucide-react';
-import { getApiErrorMessage, onboardVendor, resolveAssetUrl } from '../services/api';
+import { adminService } from '../services/adminService';
+import { getApiErrorMessage, resolveAssetUrl } from '../services/api';
 
 const slugify = (text) => {
   return text
@@ -81,8 +82,6 @@ const OnboardVendorForm = () => {
     setError(null);
     setSuccessData(null);
 
-    const validMenu = menuItems.filter(item => item.name || item.price);
-
     const payload = {
       business_name: formData.business_name,
       owner_name: formData.owner_name,
@@ -92,14 +91,14 @@ const OnboardVendorForm = () => {
       accountNumber: formData.accountNumber,
       email: formData.email,
       password: formData.password,
-      menu_items: validMenu,
+      menu_items: menuItems,
     };
 
     try {
-      const response = await onboardVendor(payload);
+      const response = await adminService.onboardVendor(payload);
       setSuccessData({
         ...response,
-        submitted_slug: payload.slug || slugify(payload.business_name),
+        submitted_slug: response.slug || formData.slug || slugify(formData.business_name),
       });
 
       setFormData({

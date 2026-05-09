@@ -12,6 +12,7 @@ import OnboardVendorForm from './pages/OnboardVendorForm';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import ChatPrototype from './pages/ChatPrototype';
+import VendorOnboardingGuide from './pages/public/VendorOnboardingGuide';
 
 // Student Page Components
 import VendorMenu from './pages/public/VendorMenu';
@@ -28,7 +29,7 @@ const LandingLayout = () => (
 
 // Protected Layout for the admin section
 const AdminLayout = () => {
-  const token = sessionStorage.getItem('admin_token');
+  const token = sessionStorage.getItem('admin_access_token');
   if (!token) {
     return <Navigate to="/admin/login" replace />;
   }
@@ -46,6 +47,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingLayout />}>
           <Route index element={<LandingPage />} />
+          <Route path="guide" element={<VendorOnboardingGuide />} />
         </Route>
         
         {/* Student Flow (No navbar layout to maximize mobile screen real-estate) */}
