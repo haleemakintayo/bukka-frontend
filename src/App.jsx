@@ -15,6 +15,13 @@ import ChatPrototype from './pages/ChatPrototype';
 import VendorDetails from './pages/VendorDetails';
 import VendorOnboardingGuide from './pages/public/VendorOnboardingGuide';
 
+// Vendor PWA Components
+import { VendorAuthProvider } from './context/VendorAuthContext';
+import VendorLayout from './layouts/VendorLayout';
+import VendorLogin from './pages/vendor/VendorLogin';
+import VendorDashboard from './pages/vendor/VendorDashboard';
+import VendorMenuManager from './pages/vendor/VendorMenuManager';
+
 // Student Page Components
 import VendorMenu from './pages/public/VendorMenu';
 import Checkout from './pages/public/Checkout';
@@ -42,6 +49,13 @@ const AdminLayout = () => {
   );
 };
 
+// Vendor App Wrapper
+const VendorApp = () => (
+  <VendorAuthProvider>
+    <Outlet />
+  </VendorAuthProvider>
+);
+
 function App() {
   return (
     <CartProvider>
@@ -55,6 +69,16 @@ function App() {
         <Route path="/order/:vendorSlug" element={<VendorMenu />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/success" element={<OrderSuccess />} />
+
+        {/* Vendor Flow (Mobile PWA) */}
+        <Route path="/vendor" element={<VendorApp />}>
+          <Route path="login" element={<VendorLogin />} />
+          <Route element={<VendorLayout />}>
+            <Route path="dashboard" element={<VendorDashboard />} />
+            <Route path="menu" element={<VendorMenuManager />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+          </Route>
+        </Route>
 
         {/* Admin Login Route */}
         <Route path="/admin/login" element={<AdminLogin />} />

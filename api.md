@@ -567,6 +567,78 @@ Environment requirements:
 
 ---
 
+## Vendor Dashboard (Mobile-First)
+
+All routes (except login) require `Authorization: Bearer <access_token>` containing `role="vendor"` issued by the vendor login endpoint.
+
+### `POST /api/v1/auth/vendor/login`
+
+Vendor login endpoint supporting authentication via PIN and phone number (or telegram chat id).
+
+Request body:
+
+```json
+{
+  "phone_number": "2348012345678",
+  "pin": "1234"
+}
+```
+*(Alternatively, use `"telegram_chat_id"` instead of `"phone_number"`)*
+
+Success response:
+
+```json
+{
+  "access_token": "<jwt>",
+  "refresh_token": "<jwt>",
+  "token_type": "bearer"
+}
+```
+
+### `GET /api/v1/vendors/me/dashboard`
+
+Returns today's aggregate metrics for the logged-in vendor.
+
+Success response:
+
+```json
+{
+  "pending_payout": 15000,
+  "orders_count": 5
+}
+```
+
+### `GET /api/v1/vendors/me/orders`
+
+Returns a paginated list of recent orders for the vendor.
+
+Query params: `skip` (default 0), `limit` (default 20)
+
+Success response: List of `OrderResponse` objects.
+
+### `GET /api/v1/vendors/me/menu`
+
+Returns the vendor's menu items for management.
+
+Success response: List of `MenuItemPublic` objects.
+
+### `PATCH /api/v1/vendors/me/menu/{item_id}`
+
+Updates a menu item's price and availability (e.g., to mark as "Sold Out").
+
+Request body (all fields optional):
+
+```json
+{
+  "price": 2500,
+  "is_available": false
+}
+```
+
+Success response: The updated `MenuItemPublic` object.
+
+---
+
 ## Orders
 
 ### `POST /api/v1/orders`
@@ -597,6 +669,7 @@ Success response:
   "order_id": 15,
   "vendor_slug": "mama-sade-kitchen",
   "user_id": 1,
+  "customer_name": "Student A",
   "items": [
     {
       "menu_item_id": 1,
