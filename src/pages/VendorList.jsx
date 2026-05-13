@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { adminService } from '../services/adminService';
 import { getApiErrorMessage, resolveAssetUrl } from '../services/api';
-import VendorDetailPanel from '../components/VendorDetailPanel';
 
 const TABS = [
   { key: 'all',     label: 'All',     icon: Users },
@@ -30,7 +29,6 @@ const VendorList = () => {
   const [copiedSlug, setCopiedSlug]     = useState(null);
   const [qrLoadingSlug, setQrLoadingSlug] = useState(null);
   const [activatingId, setActivatingId] = useState(null);
-  const [selectedVendorId, setSelectedVendorId] = useState(null);
 
   const fetchVendors = async () => {
     setLoading(true);
@@ -223,7 +221,7 @@ const VendorList = () => {
           {filteredVendors.map((vendor) => (
             <div
               key={vendor.vendor_id || vendor.slug}
-              onClick={() => setSelectedVendorId(vendor.id ?? vendor.vendor_id)}
+              onClick={() => navigate(`/admin/vendors/${vendor.id ?? vendor.vendor_id}`)}
               className="bg-white dark:bg-bukka-card-surface border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm transition-all hover:shadow-md hover:border-[#2CD6EB]/40 hover:ring-1 hover:ring-[#2CD6EB]/20 cursor-pointer group"
             >
               {/* Card Header */}
@@ -325,16 +323,6 @@ const VendorList = () => {
             </div>
           ))}
         </div>
-      )}
-
-      {/* ── Vendor Detail Slide-over ── */}
-      {selectedVendorId && (
-        <VendorDetailPanel
-          vendorId={selectedVendorId}
-          onClose={() => setSelectedVendorId(null)}
-          onDeleted={fetchVendors}
-          onUpdated={fetchVendors}
-        />
       )}
     </div>
   );

@@ -12,6 +12,7 @@ import OnboardVendorForm from './pages/OnboardVendorForm';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import ChatPrototype from './pages/ChatPrototype';
+import VendorDetails from './pages/VendorDetails';
 import VendorOnboardingGuide from './pages/public/VendorOnboardingGuide';
 
 // Student Page Components
@@ -62,6 +63,7 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="vendors" element={<VendorList />} />
+          <Route path="vendors/:id" element={<VendorDetails />} />
           <Route path="onboard" element={<OnboardVendorForm />} />
           <Route path="chat" element={<ChatPrototype />} />
           {/* Redirect to onboard by default for now */}

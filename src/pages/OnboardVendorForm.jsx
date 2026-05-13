@@ -19,8 +19,9 @@ const OnboardVendorForm = () => {
     owner_name: '',
     whatsapp_number: '',
     slug: '',
-    bankName: '',
-    accountNumber: '',
+    bank_code: '',
+    account_number: '',
+    account_name: '',
     email: '',
     password: ''
   });
@@ -32,14 +33,31 @@ const OnboardVendorForm = () => {
   const [successData, setSuccessData] = useState(null);
 
   const nigerianBanks = [
-    'Access Bank',
-    'Guaranty Trust Bank',
-    'First Bank',
-    'United Bank for Africa',
-    'Zenith Bank',
-    'Kuda Bank',
-    'Opay',
-    'Palmpay',
+    { name: 'Access Bank', code: '044' },
+    { name: 'Citibank', code: '023' },
+    { name: 'Diamond Bank', code: '063' },
+    { name: 'Ecobank Nigeria', code: '050' },
+    { name: 'Fidelity Bank', code: '070' },
+    { name: 'First Bank of Nigeria', code: '011' },
+    { name: 'First City Monument Bank', code: '214' },
+    { name: 'Guaranty Trust Bank', code: '058' },
+    { name: 'Heritage Bank', code: '030' },
+    { name: 'Keystone Bank', code: '082' },
+    { name: 'Polaris Bank', code: '076' },
+    { name: 'Providus Bank', code: '101' },
+    { name: 'Stanbic IBTC Bank', code: '221' },
+    { name: 'Standard Chartered Bank', code: '068' },
+    { name: 'Sterling Bank', code: '232' },
+    { name: 'Suntrust Bank', code: '100' },
+    { name: 'Union Bank of Nigeria', code: '032' },
+    { name: 'United Bank for Africa', code: '033' },
+    { name: 'Unity Bank', code: '215' },
+    { name: 'Wema Bank', code: '035' },
+    { name: 'Zenith Bank', code: '057' },
+    { name: 'Kuda Bank', code: '50211' },
+    { name: 'Opay', code: '090267' },
+    { name: 'Palmpay', code: '090275' },
+    { name: 'Moniepoint', code: '090405' },
   ];
 
   // Auto-suggest slug when business name changes, unless manually edited
@@ -87,8 +105,9 @@ const OnboardVendorForm = () => {
       owner_name: formData.owner_name,
       whatsapp_number: formData.whatsapp_number,
       slug: formData.slug,
-      bankName: formData.bankName,
-      accountNumber: formData.accountNumber,
+      bank_code: formData.bank_code,
+      account_number: formData.account_number,
+      account_name: formData.account_name,
       email: formData.email,
       password: formData.password,
       menu_items: menuItems,
@@ -103,7 +122,7 @@ const OnboardVendorForm = () => {
 
       setFormData({
         business_name: '', owner_name: '', whatsapp_number: '', slug: '',
-        bankName: '', accountNumber: '', email: '', password: ''
+        bank_code: '', account_number: '', account_name: '', email: '', password: ''
       });
       setMenuItems([{ name: '', price: '', category: '' }]);
       setIsSlugEditedManually(false);
@@ -271,17 +290,21 @@ const OnboardVendorForm = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-bukka-soft-white border-b border-gray-100 dark:border-gray-800 pb-3">Financial Structure</h3>
               <div className="mt-5 space-y-4">
                 <div>
-                  <label htmlFor="onboard_bankName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bank Name</label>
-                  <select name="bankName" id="onboard_bankName" value={formData.bankName} onChange={handleFormChange} required className={inputClassName}>
+                  <label htmlFor="onboard_bank_code" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bank Name</label>
+                  <select name="bank_code" id="onboard_bank_code" value={formData.bank_code} onChange={handleFormChange} required className={inputClassName}>
                     <option value="">Select a bank</option>
                     {nigerianBanks.map((bank) => (
-                      <option key={bank} value={bank}>{bank}</option>
+                      <option key={bank.code} value={bank.code}>{bank.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="onboard_accountNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Number</label>
-                  <input type="text" inputMode="numeric" pattern="[0-9]*" name="accountNumber" id="onboard_accountNumber" value={formData.accountNumber} onChange={handleFormChange} required autoComplete="off" placeholder="10-digit account number" className={inputClassName} />
+                  <label htmlFor="onboard_account_number" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Number</label>
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" name="account_number" id="onboard_account_number" value={formData.account_number} onChange={handleFormChange} required autoComplete="off" placeholder="10-digit account number" className={inputClassName} />
+                </div>
+                <div>
+                  <label htmlFor="onboard_account_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Name</label>
+                  <input type="text" name="account_name" id="onboard_account_name" value={formData.account_name} onChange={handleFormChange} required autoComplete="off" placeholder="Account Holder Name" className={inputClassName} />
                 </div>
               </div>
             </div>

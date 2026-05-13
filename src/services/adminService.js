@@ -77,6 +77,9 @@ export const adminService = {
       bank_details: buildBankDetails(vendorData),
       email: vendorData.email?.trim() || undefined,
       password: vendorData.password || undefined,
+      bank_code: vendorData.bank_code?.trim() || undefined,
+      account_number: vendorData.account_number?.trim() || undefined,
+      account_name: vendorData.account_name?.trim() || undefined,
       menu_items: normaliseMenuItems(vendorData.menu_items),
     };
     // Remove undefined keys so backend doesn't receive nulls for optional fields

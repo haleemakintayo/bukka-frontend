@@ -2,7 +2,7 @@
 
 This document explains how the current multi-vendor backend is wired, what the production deployment is doing today, and where the known implementation gaps are.
 
-Last reconciled with code and production: `2026-05-04`
+Last reconciled with code and production: `2026-05-12`
 
 ## Routing Overview
 
@@ -24,6 +24,7 @@ The FastAPI router stack is defined in `app/api/api.py`.
 - `/api/v1/orders/{order_id}`
 - `/api/v1/telegram/webhook`
 - `/api/v1/webhook`
+- `/api/v1/webhooks/paystack` *(Paystack payment events)*
 - `/api/v1/demo/chats`
 - `/api/v1/demo/reset`
 
@@ -40,7 +41,11 @@ Current ORM fields:
 - `owner_name`
 - `whatsapp_number`
 - `telegram_chat_id`
-- `bank_details`
+- `bank_details` (legacy free-text)
+- `bank_code` — CBN 3-digit bank code, e.g. `"058"` for GTBank *(new)*
+- `account_number` — 10-digit NUBAN *(new)*
+- `account_name` — resolved account holder name *(new)*
+- `subaccount_code` — Paystack subaccount ID, e.g. `ACCT_xxxxxxxxxx` *(new)*
 - `pairing_code`
 - `is_active`
 - `rating`
@@ -76,7 +81,26 @@ Used for vendor-owner login and admin access.
 
 ### `orders`
 
-Used for checkout, but the payment flow is still prototype-grade and should not yet be treated as a hardened commerce implementation.
+Used for checkout. Payment fields added in migration `a1b2c3d4e5f6`:
+
+- `payment_reference` — unique Paystack transaction reference (nullable until checkout is initiated)
+- `payment_status` — `PENDING` | `PAID` | `FAILED` (default `PENDING`)
+
+### `services/paystack_service.py`
+
+New centralised Paystack API client added in this release. Two public functions:
+
+**`create_subaccount(business_name, bank_code, account_number) -> str`**
+- Calls `POST https://api.paystack.co/subaccount`
+- Returns `subaccount_code` to be stored on `Vendor.subaccount_code`
+- Call once when onboarding or when a vendor updates their banking details
+
+**`initialize_checkout(email, amount_naira, subaccount_code, order_id, vendor_id) -> dict`**
+- Calls `POST https://api.paystack.co/transaction/initialize`
+- Converts Naira → Kobo internally (× 100, rounded to integer)
+- Applies a flat ₦50 platform fee (5000 kobo) via `transaction_charge`
+- Returns `{"authorization_url": ..., "reference": ...}`
+- Store `reference` on `Order.payment_reference` immediately after calling
 
 ## Vendor Lifecycle
 
@@ -184,14 +208,18 @@ Current state:
 
 ## Orders and Payment Flow
 
-The order routes exist, but there are still important prototype constraints:
+The split-payment engine is now wired end-to-end:
 
-- `POST /api/v1/orders` uses a placeholder `user_id = 1`
-- `delivery_address` and `notes` are returned but not persisted on the order model
-- frontend-supplied `unit_price` is trusted
-- `POST /api/v1/orders/verify` marks the first pending order as paid instead of resolving by stored transaction reference
+1. **Vendor banking setup** — Admin supplies `bank_code` + `account_number` during onboarding or via `PATCH /admin/vendors/{id}`. The backend calls `paystack_service.create_subaccount()` and stores the returned `subaccount_code` on the vendor record.
+2. **Customer checkout** — When the AI detects `intent=checkout` in `chat_manager.py`, it calls `paystack_service.initialize_checkout()`, stores the `payment_reference` on the order, and sends the `authorization_url` to the customer.
+3. **Payment confirmation** — Paystack calls `POST /api/v1/webhooks/paystack` with `charge.success`. The handler verifies the HMAC-SHA512 signature, looks up the order by `payment_reference`, and sets `payment_status → PAID`.
+4. **Vendor notification** — A `TODO` comment marks where a WhatsApp/Telegram green alert will be triggered post-payment.
 
-This means the order flow is available for development integration, but it is not yet a production-safe payment implementation.
+Known limitations still in place:
+
+- `delivery_address` and `notes` are returned but not persisted on the `Order` model
+- Placeholder `user_id = 1` is used in the REST `POST /orders` endpoint (chat flow uses real user records)
+- `POST /api/v1/orders/verify` is still a stub (manual reference verification); the webhook is the production path
 
 ## Production Verification Snapshot
 
@@ -207,6 +235,10 @@ Verified on `2026-05-04` against `https://bukka-ai-backend-523632194f78.herokuap
 | `GET /api/v1/vendors/{slug}/qr` | `500` | Broken by missing `TELEGRAM_BOT_USERNAME` |
 
 ## Required Environment Variables
+
+### Payment (Paystack)
+
+- `PAYSTACK_SECRET_KEY` — live key (`sk_live_...`) or test key (`sk_test_...`) from the Paystack dashboard
 
 ### Core
 
@@ -244,9 +276,11 @@ Verified on `2026-05-04` against `https://bukka-ai-backend-523632194f78.herokuap
 
 ### High
 
-- run the migration and deploy the `menu_items.description` fix
-- run the migration and deploy the `vendors.created_at` fix
-- fix production QR env config for the selected owner platform
+- run migration `a1b2c3d4e5f6` to add Paystack payment fields
+- set `PAYSTACK_SECRET_KEY` in production Heroku config vars
+- implement POST endpoint to call `create_subaccount` during vendor onboarding
+- implement POST endpoint to call `initialize_checkout` during order checkout
+- implement Paystack webhook handler to confirm `payment.success` events and flip `payment_status` to `PAID`
 
 ### Medium
 

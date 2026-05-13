@@ -8,7 +8,7 @@ It intentionally separates:
 - the live production behavior verified against `https://bukka-ai-backend-523632194f78.herokuapp.com`
 - the known gaps that still need backend fixes
 
-Last verified against production: `2026-05-10`
+Last verified against production: `2026-05-12`
 
 ## Base URLs
 
@@ -62,6 +62,7 @@ Last verified against production: `2026-05-10`.
 - `POST /api/v1/telegram/webhook`
 - `POST /api/v1/webhook`
 - `GET /api/v1/webhook`
+- `POST /api/v1/webhooks/paystack` *(new — Paystack payment events)*
 - `GET /`
 
 ---
@@ -157,6 +158,9 @@ Request body:
   "whatsapp_number": "2348012345678",
   "telegram_chat_id": "7001002003",
   "bank_details": "GTBank 0123456789 - Sade Afolabi",
+  "bank_code": "058",
+  "account_number": "0123456789",
+  "account_name": "Sade Afolabi",
   "email": "sade.vendor@example.com",
   "password": "VendorPass123!",
   "menu_items": [
@@ -173,6 +177,7 @@ Field notes:
 
 - Required: `business_name`, `owner_name`, `bank_details`, `email`, `password`, `menu_items`
 - Optional: `slug` (auto-generated if omitted), `whatsapp_number`, `telegram_chat_id`
+- Optional Paystack fields: `bank_code`, `account_number`, `account_name` — supply these to auto-register a Paystack subaccount during onboarding
 - `pairing_code` is generated server-side
 
 Success response:
@@ -237,6 +242,10 @@ Success response:
   "whatsapp_number": "2348012345678",
   "telegram_chat_id": "7001002003",
   "bank_details": "GTBank 0123456789 - Sade Afolabi",
+  "bank_code": "058",
+  "account_number": "0123456789",
+  "account_name": "Sade Afolabi",
+  "subaccount_code": "ACCT_xxxxxxxxxx",
   "pairing_code": "8f3a9b21",
   "is_active": true,
   "active_menu_items_count": 4,
@@ -262,6 +271,10 @@ Request body (all fields optional):
   "whatsapp_number": "2348012345678",
   "telegram_chat_id": "7001002003",
   "bank_details": "GTBank 0123456789 - Sade Afolabi",
+  "bank_code": "058",
+  "account_number": "0123456789",
+  "account_name": "Sade Afolabi",
+  "subaccount_code": "ACCT_xxxxxxxxxx",
   "is_active": true,
   "rating": 5,
   "hours": "9am-9pm",
@@ -597,7 +610,9 @@ Success response:
   "status": "Pending",
   "delivery_address": "123 Main Street, Lagos",
   "notes": "Please add extra pepper",
-  "created_at": "2026-05-04T12:00:00"
+  "created_at": "2026-05-04T12:00:00",
+  "payment_reference": null,
+  "payment_status": "PENDING"
 }
 ```
 
@@ -606,6 +621,7 @@ Known limitations:
 - `unit_price` is trusted from the client (not recalculated from DB)
 - `delivery_address` and `notes` are not persisted on the Order ORM model
 - Placeholder `user_id = 1` is used
+- `payment_reference` is `null` until `initialize_checkout` is called; `payment_status` starts as `"PENDING"`
 
 ### `POST /api/v1/orders/verify`
 
@@ -638,6 +654,25 @@ WhatsApp inbound webhook. Requires `X-Hub-Signature-256` header.
 ### `POST /api/v1/telegram/webhook`
 
 Telegram inbound webhook. Requires `X-Telegram-Bot-Api-Secret-Token` header.
+
+### `POST /api/v1/webhooks/paystack`
+
+Paystack payment event listener. Verifies the `X-Paystack-Signature` header (HMAC-SHA512 of the raw request body using `PAYSTACK_SECRET_KEY`) before processing.
+
+**Security requirement**: Requests without a valid signature are rejected with `400`.
+
+**Supported events**:
+
+| Event | Action |
+|---|---|
+| `charge.success` | Sets `Order.payment_status = "PAID"` and `Order.status = "Paid"`. Looks up by `Order.payment_reference`; falls back to `order_id` from metadata. |
+| Any other event | Acknowledged with `{"status": "success"}` and ignored. |
+
+**Response**: Always `200 {"status": "success"}` once the signature is verified. Paystack retries on non-200.
+
+Required environment variable: `PAYSTACK_SECRET_KEY`
+
+Implemented in `app/api/endpoints/webhooks.py`.
 
 ---
 

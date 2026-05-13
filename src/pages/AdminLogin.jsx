@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, Zap } from 'lucide-react';
-import { adminLogin, getApiErrorMessage } from '../services/api';
+import { getApiErrorMessage } from '../services/api';
+import { adminService } from '../services/adminService';
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -30,7 +31,7 @@ const AdminLogin = () => {
     }
 
     try {
-      const response = await adminLogin({ username: trimmedUsername, password: trimmedPassword });
+      const response = await adminService.login(trimmedUsername, trimmedPassword);
       const { access_token } = response;
 
       if (access_token) {
