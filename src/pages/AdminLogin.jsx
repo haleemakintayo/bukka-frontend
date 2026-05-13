@@ -32,10 +32,13 @@ const AdminLogin = () => {
 
     try {
       const response = await adminService.login(trimmedUsername, trimmedPassword);
-      const { access_token } = response;
+      const { access_token, refresh_token } = response;
 
       if (access_token) {
-        sessionStorage.setItem('admin_token', access_token);
+        sessionStorage.setItem('admin_access_token', access_token);
+        if (refresh_token) {
+          sessionStorage.setItem('admin_refresh_token', refresh_token);
+        }
         navigate('/admin/dashboard');
       } else {
         setError('Login succeeded but no access token was returned.');
