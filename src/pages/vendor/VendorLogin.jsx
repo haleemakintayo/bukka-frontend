@@ -42,10 +42,10 @@ const VendorLogin = () => {
     <div className="min-h-screen flex flex-col bg-[#171B26] text-white">
       <div className="flex-1 flex flex-col justify-center px-6 py-12 w-full max-w-md mx-auto">
         <div className="mb-10 text-center">
-          <div className="w-20 h-20 bg-white/5 border border-white/10 rounded-3xl mx-auto flex items-center justify-center mb-6 shadow-2xl">
-            <span className="text-3xl font-extrabold text-[#FA6131]">B<span className="text-[#2CD6EB]">A</span></span>
+          <div className="flex items-center justify-center mb-6">
+            <img src="/bukkaai-logo-dark.png" alt="Bukka AI Logo" className="h-16 md:h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(44,214,235,0.3)] transition-transform hover:scale-105 duration-300" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Vendor Portal</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">Vendor Portal</h1>
           <p className="text-gray-400 mt-2 text-sm">Sign in to manage your daily orders and menu availability.</p>
         </div>
 
@@ -55,9 +55,9 @@ const VendorLogin = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 bg-white/5 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[2rem] shadow-2xl">
           {/* Method Toggle */}
-          <div className="flex bg-[#1e2333] p-1.5 rounded-2xl border border-white/5">
+          <div className="flex bg-[#1e2333]/80 p-1.5 rounded-2xl border border-white/5 backdrop-blur-sm">
             <button
               type="button"
               onClick={() => { setLoginMethod('phone'); setIdentifier(''); }}
@@ -118,11 +118,17 @@ const VendorLogin = () => {
           <button
             type="submit"
             disabled={loading || identifier.length < 5 || pin.length < 4}
-            className="w-full bg-gradient-to-r from-[#FA6131] to-[#e04e1f] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-[#FA6131]/20 flex justify-center items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+            className="w-full bg-gradient-to-r from-[#FA6131] to-[#e04e1f] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-[#FA6131]/30 flex justify-center items-center gap-2 hover:shadow-[#FA6131]/50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none mt-4"
           >
             {loading ? <Loader2 size={24} className="animate-spin" /> : 'Secure Login'}
           </button>
         </form>
+      </div>
+
+      {/* Decorative Background Gradients */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#FA6131] rounded-full mix-blend-screen filter blur-[120px] opacity-20"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#2CD6EB] rounded-full mix-blend-screen filter blur-[120px] opacity-20"></div>
       </div>
     </div>
   );

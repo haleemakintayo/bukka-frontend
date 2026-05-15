@@ -81,7 +81,7 @@ const AdminLogin = () => {
           <img
             src="/bukkaai-logo-dark.png"
             alt="Bukka AI"
-            className="h-14 mx-auto mb-8 brightness-200 grayscale"
+            className="h-14 mx-auto mb-8 drop-shadow-[0_0_15px_rgba(44,214,235,0.3)] transition-transform hover:scale-105 duration-300"
           />
 
           <h1 className="text-4xl font-extrabold text-white leading-tight mb-4">
@@ -127,7 +127,7 @@ const AdminLogin = () => {
             <img
               src="/bukkaai-logo-dark.png"
               alt="Bukka AI"
-              className="h-10 mx-auto mb-2 brightness-200 grayscale"
+              className="h-12 mx-auto mb-2 drop-shadow-[0_0_15px_rgba(44,214,235,0.3)] transition-transform hover:scale-105 duration-300"
             />
           </div>
 
