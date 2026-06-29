@@ -12,6 +12,11 @@ export const publicService = {
     return response.data;
   },
 
+  getVendorDeliveryAreas: async (slug) => {
+    const response = await apiClient.get(`/vendors/${slug}/delivery-areas`);
+    return response.data;
+  },
+
   getVendorQR: async (slug) => {
     const response = await apiClient.get(`/vendors/${slug}/qr`);
     return response.data;

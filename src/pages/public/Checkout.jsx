@@ -23,12 +23,40 @@ const Checkout = () => {
   const { cartItems, cartTotal, addToCart, decrementQuantity, clearCart } = useCart();
   const navigate = useNavigate();
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [orderType, setOrderType] = useState('pickup');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const [deliveryAreas, setDeliveryAreas] = useState([]);
+  const [selectedAreaId, setSelectedAreaId] = useState('');
+  const [deliveryFee, setDeliveryFee] = useState(0);
+
+  const vendorSlug = cartItems[0]?.vendorSlug;
+
+  React.useEffect(() => {
+    if (vendorSlug) {
+      publicService.getVendorDeliveryAreas(vendorSlug)
+        .then(data => {
+          setDeliveryAreas(data || []);
+        })
+        .catch(err => {
+          console.error("Failed to load delivery areas:", err);
+        });
+    }
+  }, [vendorSlug]);
+
+  const handleAreaChange = (e) => {
+    const areaId = e.target.value;
+    setSelectedAreaId(areaId);
+    const selectedArea = deliveryAreas.find(a => a.id === parseInt(areaId));
+    setDeliveryFee(selectedArea ? selectedArea.price : 0);
+  };
+
   const CONVENIENCE_FEE = 50;
-  const finalTotal = cartTotal + CONVENIENCE_FEE;
+  const finalTotal = cartTotal + CONVENIENCE_FEE + (orderType === 'delivery' ? deliveryFee : 0);
 
   // Placeholder key as requested
   const config = {
@@ -77,9 +105,23 @@ const Checkout = () => {
       return;
     }
 
-    if (!deliveryAddress.trim()) {
-      alert("Please enter a delivery or pickup address.");
-      return;
+    if (orderType === 'delivery') {
+      if (!customerName.trim()) {
+        alert("Please enter the recipient's name.");
+        return;
+      }
+      if (!customerPhone.trim() || customerPhone.length < 10) {
+        alert("Please enter a valid recipient's phone number.");
+        return;
+      }
+      if (!selectedAreaId) {
+        alert("Please select a delivery area.");
+        return;
+      }
+      if (!deliveryAddress.trim()) {
+        alert("Please enter a delivery address.");
+        return;
+      }
     }
     
     setIsProcessing(true);
@@ -96,8 +138,13 @@ const Checkout = () => {
           quantity: item.quantity,
           unit_price: item.price
         })),
-        delivery_address: deliveryAddress.trim(),
-        notes,
+        order_type: orderType,
+        customer_name: orderType === 'delivery' ? customerName.trim() : null,
+        customer_phone: orderType === 'delivery' ? formatWhatsappNumber(customerPhone) : normalizedWhatsapp,
+        delivery_area_id: orderType === 'delivery' ? parseInt(selectedAreaId) : null,
+        delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : 'Store Pickup',
+        notes: notes,
+        delivery_note: orderNotes.trim() || null,
       });
 
       // Initialize payment
@@ -216,6 +263,15 @@ const Checkout = () => {
               </span>
               <span>₦{CONVENIENCE_FEE.toLocaleString()}</span>
             </div>
+            {orderType === 'delivery' && (
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                  Delivery Fee
+                </span>
+                <span>₦{deliveryFee.toLocaleString()}</span>
+              </div>
+            )}
           </div>
           
           <div className="pt-4 mt-4 border-t border-dashed border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -229,16 +285,45 @@ const Checkout = () => {
           </div>
         </section>
 
-        {/* WhatsApp & Payment Form - Enhanced */}
+        {/* Order Type Toggle */}
+        <section className="bg-white dark:bg-bukka-card-surface rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
+          <h2 className="font-bold text-gray-900 dark:text-bukka-soft-white mb-4">How do you want your order?</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setOrderType('pickup')}
+              className={`py-3.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border ${
+                orderType === 'pickup'
+                  ? 'bg-gradient-to-r from-bukka-orange to-orange-500 text-white border-transparent shadow-md'
+                  : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              🛍️ Pickup
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderType('delivery')}
+              className={`py-3.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border ${
+                orderType === 'delivery'
+                  ? 'bg-gradient-to-r from-bukka-orange to-orange-500 text-white border-transparent shadow-md'
+                  : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              🛵 Delivery
+            </button>
+          </div>
+        </section>
+
+        {/* Contact & Delivery Form */}
         <section className="bg-white dark:bg-bukka-card-surface rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2 mb-4">
             <MessageCircle className="text-bukka-green" size={20} />
-            <h2 className="font-bold text-gray-900 dark:text-bukka-soft-white">Contact for Order Updates</h2>
+            <h2 className="font-bold text-gray-900 dark:text-bukka-soft-white">Contact & Delivery Information</h2>
           </div>
           
-          <div className="mb-5">
+          <div className="mb-4">
             <label htmlFor="whatsapp" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              WhatsApp Number <span className="text-red-500">*</span>
+              WhatsApp Number (for notifications) <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">+234</span>
@@ -252,46 +337,112 @@ const Checkout = () => {
                 required
               />
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
-              <Clock size={12} />
-              We'll send you updates when your food is being prepared
-            </p>
           </div>
 
-          <div className="mb-5">
-            <label htmlFor="delivery-address" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Delivery or Pickup Address <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              id="delivery-address"
-              value={deliveryAddress}
-              onChange={(e) => setDeliveryAddress(e.target.value)}
-              rows={3}
-              placeholder="Hostel, faculty gate, or any clear pickup note"
-              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-bukka-green focus:border-transparent text-sm text-gray-900 dark:text-bukka-soft-white resize-none"
-              required
-            />
-          </div>
+          {orderType === 'delivery' && (
+            <>
+              <div className="mb-4">
+                <label htmlFor="recipient-name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Recipient Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="recipient-name"
+                  type="text"
+                  placeholder="Enter full name"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-bukka-green focus:border-transparent text-sm text-gray-900 dark:text-bukka-soft-white"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="recipient-phone" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex justify-between items-center">
+                  <span>Recipient Phone Number <span className="text-red-500">*</span></span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerPhone(whatsappNumber)}
+                    className="text-xs text-bukka-orange hover:underline font-bold"
+                  >
+                    Use WhatsApp No.
+                  </button>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">+234</span>
+                  <input
+                    id="recipient-phone"
+                    type="tel"
+                    placeholder="80X XXX XXXX"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="w-full pl-16 pr-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-bukka-green focus:border-transparent text-lg font-medium text-gray-900 dark:text-bukka-soft-white"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="delivery-area" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Delivery Area <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="delivery-area"
+                  value={selectedAreaId}
+                  onChange={handleAreaChange}
+                  className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-bukka-green focus:border-transparent text-sm text-gray-900 dark:text-bukka-soft-white"
+                  required
+                >
+                  <option value="">Select delivery area...</option>
+                  {deliveryAreas.map(area => (
+                    <option key={area.id} value={area.id}>
+                      {area.name} (+₦{area.price.toLocaleString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="delivery-address" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Delivery Address <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="delivery-address"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  rows={3}
+                  placeholder="Hostel, block, room number, or specific department gate..."
+                  className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-bukka-green focus:border-transparent text-sm text-gray-900 dark:text-bukka-soft-white resize-none"
+                  required
+                />
+              </div>
+            </>
+          )}
 
           <div className="mb-5">
             <label htmlFor="order-notes" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Extra Notes
+              Extra Notes / Cooking Instructions
             </label>
             <textarea
               id="order-notes"
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
               rows={2}
-              placeholder="Extra pepper, no onions, call on arrival..."
+              placeholder="Extra pepper, no onions, pack separately, etc..."
               className="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-bukka-green focus:border-transparent text-sm text-gray-900 dark:text-bukka-soft-white resize-none"
             />
           </div>
 
           <button
             onClick={handlePayClick}
-            disabled={isProcessing || !whatsappNumber || !deliveryAddress.trim()}
+            disabled={
+              isProcessing || 
+              !whatsappNumber || 
+              (orderType === 'delivery' && (!customerName.trim() || !customerPhone.trim() || !selectedAreaId || !deliveryAddress.trim()))
+            }
             className={`w-full py-4 px-6 rounded-2xl font-bold text-white shadow-lg flex justify-center items-center gap-2 transition-all duration-300 active:scale-[0.98] ${
-              isProcessing || !whatsappNumber || !deliveryAddress.trim()
+              isProcessing || 
+              !whatsappNumber || 
+              (orderType === 'delivery' && (!customerName.trim() || !customerPhone.trim() || !selectedAreaId || !deliveryAddress.trim()))
                 ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed' 
                 : 'bg-gradient-to-r from-bukka-orange to-orange-500 hover:from-orange-600 hover:to-orange-600 shadow-bukka-orange/30 hover:shadow-bukka-orange/40 hover:-translate-y-0.5'
             }`}
