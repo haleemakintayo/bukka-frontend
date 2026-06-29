@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import LandingNavbar from './components/LandingNavbar';
+import LandingFooter from './components/LandingFooter';
 import AdminSidebar from './components/AdminSidebar';
 import './App.css';
 
@@ -14,6 +15,7 @@ import AdminLogin from './pages/AdminLogin';
 import ChatPrototype from './pages/ChatPrototype';
 import VendorDetails from './pages/VendorDetails';
 import VendorOnboardingGuide from './pages/public/VendorOnboardingGuide';
+import PrivacyPolicy from './pages/public/PrivacyPolicy';
 
 // Vendor PWA Components
 import { VendorAuthProvider } from './context/VendorAuthContext';
@@ -32,6 +34,7 @@ const LandingLayout = () => (
   <>
     <LandingNavbar />
     <Outlet />
+    <LandingFooter />
   </>
 );
 
@@ -63,6 +66,7 @@ function App() {
         <Route path="/" element={<LandingLayout />}>
           <Route index element={<LandingPage />} />
           <Route path="guide" element={<VendorOnboardingGuide />} />
+          <Route path="privacy" element={<PrivacyPolicy />} />
         </Route>
         
         {/* Student Flow (No navbar layout to maximize mobile screen real-estate) */}
