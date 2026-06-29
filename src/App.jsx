@@ -94,8 +94,8 @@ function App() {
           <Route path="vendors/:id" element={<VendorDetails />} />
           <Route path="onboard" element={<OnboardVendorForm />} />
           <Route path="chat" element={<ChatPrototype />} />
-          {/* Redirect to onboard by default for now */}
-          <Route index element={<Navigate to="onboard" replace />} />
+          {/* Redirect to dashboard by default */}
+          <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
       </Routes>
     </CartProvider>

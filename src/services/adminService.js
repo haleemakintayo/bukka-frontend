@@ -61,6 +61,14 @@ export const adminService = {
     return response.data;
   },
 
+  // ─── Analytics ──────────────────────────────────────────────────────────────
+
+  /** GET /admin/analytics — platform-level analytics */
+  getAnalytics: async () => {
+    const response = await apiClient.get('/admin/analytics');
+    return response.data;
+  },
+
   // ─── Vendor Management ────────────────────────────────────────────────────
 
   /**

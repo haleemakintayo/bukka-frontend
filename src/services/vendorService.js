@@ -25,5 +25,17 @@ export const vendorService = {
   updateMenuItem: async (itemId, data) => {
     const response = await apiClient.patch(`/vendors/me/menu/${itemId}`, data);
     return response.data;
-  }
+  },
+
+  /** POST /vendors/me/menu — add a new menu item (if backend supports vendor self-service) */
+  addMenuItem: async (data) => {
+    const response = await apiClient.post('/vendors/me/menu', data);
+    return response.data;
+  },
+
+  /** GET /vendors/me/analytics — vendor analytics */
+  getAnalytics: async (days = 7) => {
+    const response = await apiClient.get('/vendors/me/analytics', { params: { days } });
+    return response.data;
+  },
 };

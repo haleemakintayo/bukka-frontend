@@ -25,7 +25,12 @@ const LandingNavbar = () => {
             <img 
               src="/bukkaai-logo-dark.png" 
               alt="Bukka AI" 
-              className="h-10 md:h-12 dark:brightness-200 dark:grayscale transition-all" 
+              className="h-10 md:h-12 dark:hidden transition-all" 
+            />
+            <img 
+              src="/bukkaai-logo-light.png" 
+              alt="Bukka AI" 
+              className="h-10 md:h-12 hidden dark:block transition-all" 
             />
           </Link>
 

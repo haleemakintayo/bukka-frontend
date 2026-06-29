@@ -43,7 +43,7 @@ const VendorLogin = () => {
       <div className="flex-1 flex flex-col justify-center px-6 py-12 w-full max-w-md mx-auto">
         <div className="mb-10 text-center">
           <div className="flex items-center justify-center mb-6">
-            <img src="/bukkaai-logo-dark.png" alt="Bukka AI Logo" className="h-16 md:h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(44,214,235,0.3)] transition-transform hover:scale-105 duration-300" />
+            <img src="/bukkaai-logo-light.png" alt="Bukka AI Logo" className="h-16 md:h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(44,214,235,0.3)] transition-transform hover:scale-105 duration-300" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">Vendor Portal</h1>
           <p className="text-gray-400 mt-2 text-sm">Sign in to manage your daily orders and menu availability.</p>

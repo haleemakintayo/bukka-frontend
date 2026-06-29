@@ -29,11 +29,16 @@ All API routes below are rooted at `/api/v1`.
 
 Last verified against production: `2026-05-10`.
 
+Code-level API additions from `2026-05-15` are documented below even where they have not yet been re-verified against production.
+
 ### ✅ All endpoints working live
 
 **Auth**
 - `POST /api/v1/admin/login`
 - `POST /api/v1/admin/refresh`
+
+**Admin - Analytics**
+- `GET /api/v1/admin/analytics` *(implemented in code on 2026-05-15; not yet re-verified live)*
 
 **Admin — Vendor Management**
 - `POST /api/v1/admin/vendors/onboard`
@@ -57,6 +62,16 @@ Last verified against production: `2026-05-10`.
 - `GET /api/v1/vendors/{slug}`
 - `GET /api/v1/vendors/{slug}/menu`
 - `GET /api/v1/vendors/{slug}/qr`
+
+**Vendor Dashboard**
+- `POST /api/v1/auth/vendor/login`
+- `GET /api/v1/vendors/me/dashboard`
+- `GET /api/v1/vendors/me/analytics` *(implemented in code on 2026-05-15; not yet re-verified live)*
+- `GET /api/v1/vendors/me/orders`
+- `GET /api/v1/vendors/me/orders/{order_id}` *(implemented in code on 2026-05-15; not yet re-verified live)*
+- `GET /api/v1/vendors/me/menu`
+- `POST /api/v1/vendors/me/menu`
+- `PATCH /api/v1/vendors/me/menu/{item_id}`
 
 **Webhooks & Misc**
 - `POST /api/v1/telegram/webhook`
@@ -137,6 +152,39 @@ Request body:
   "vendor_id": 1
 }
 ```
+
+---
+
+## Admin Analytics
+
+All routes in this section require `Authorization: Bearer <access_token>` from a superadmin.
+
+### `GET /api/v1/admin/analytics`
+
+Returns platform-level analytics for the admin dashboard.
+
+Success response:
+
+```json
+{
+  "platform_gmv": 125000,
+  "platform_revenue": 1450,
+  "total_vendors": 18,
+  "conversion_rate": 0.72
+}
+```
+
+Response fields:
+
+- `platform_gmv`: Sum of `total_price` across all orders where `payment_status="PAID"`
+- `platform_revenue`: `(count of PAID orders) * 50`
+- `total_vendors`: Total registered vendor count
+- `conversion_rate`: `paid_count / (paid_count + pending_count + failed_count)`, or `0.0` if the denominator is zero
+
+Status:
+
+- Implemented in `app/api/endpoints/admin.py`
+- Added in code on `2026-05-15`
 
 ---
 
@@ -608,19 +656,120 @@ Success response:
 }
 ```
 
+### `GET /api/v1/vendors/me/analytics`
+
+Returns analytics for the logged-in vendor.
+
+Query params:
+
+- `days` optional integer, default `7`
+- Values less than `1` return `400`
+
+Business rules:
+
+- `total_revenue` and `total_orders` only count orders where `payment_status="PAID"`
+- `pending_payout` is the sum of PAID orders created since midnight today using Lagos business-day boundaries
+- `top_items` returns the top 3 sold items by quantity within the selected `days` window
+
+Success response:
+
+```json
+{
+  "total_revenue": 42000,
+  "total_orders": 11,
+  "pending_payout": 9000,
+  "top_items": [
+    {
+      "menu_item_name": "Jollof Rice",
+      "quantity_sold": 8
+    },
+    {
+      "menu_item_name": "Coke",
+      "quantity_sold": 5
+    },
+    {
+      "menu_item_name": "Beans",
+      "quantity_sold": 4
+    }
+  ]
+}
+```
+
 ### `GET /api/v1/vendors/me/orders`
 
 Returns a paginated list of recent orders for the vendor.
 
 Query params: `skip` (default 0), `limit` (default 20)
 
-Success response: List of `OrderResponse` objects.
+Success response: List of `OrderResponse` objects including normalized `items`, delivery fields, and payment fields.
+
+### `GET /api/v1/vendors/me/orders/{order_id}`
+
+Returns the full detail for a single vendor-owned order.
+
+Security:
+
+- Requires vendor auth
+- Returns `404` if the order does not exist or belongs to another vendor
+
+Success response:
+
+```json
+{
+  "order_id": 15,
+  "vendor_slug": "mama-sade-kitchen",
+  "user_id": 4,
+  "customer_name": "Ada",
+  "items": [
+    {
+      "menu_item_id": 1,
+      "menu_item_name": "Jollof Rice",
+      "quantity": 2,
+      "unit_price": 1500,
+      "line_total": 3000
+    },
+    {
+      "menu_item_id": 3,
+      "menu_item_name": "Coke",
+      "quantity": 1,
+      "unit_price": 500,
+      "line_total": 500
+    }
+  ],
+  "total_amount": 3500,
+  "status": "Paid",
+  "order_type": "delivery",
+  "delivery_address": "Hall 2, Room 14",
+  "delivery_note": "Call when outside",
+  "notes": "Call when outside",
+  "customer_phone": "2348011111111",
+  "created_at": "2026-05-15T08:30:00",
+  "payment_reference": "PSK_ref_123",
+  "payment_status": "PAID"
+}
+```
 
 ### `GET /api/v1/vendors/me/menu`
 
 Returns the vendor's menu items for management.
 
 Success response: List of `MenuItemPublic` objects.
+
+### `POST /api/v1/vendors/me/menu`
+
+Adds a new menu item to the vendor's storefront.
+
+Request body:
+
+```json
+{
+  "name": "Suya",
+  "price": 1000,
+  "category": "Meat"
+}
+```
+
+Success response (201 Created): The created `MenuItemPublic` object.
 
 ### `PATCH /api/v1/vendors/me/menu/{item_id}`
 
@@ -650,6 +799,7 @@ Request body:
 ```json
 {
   "vendor_slug": "mama-sade-kitchen",
+  "order_type": "delivery",
   "items": [
     {
       "menu_item_id": 1,
@@ -658,9 +808,17 @@ Request body:
     }
   ],
   "delivery_address": "123 Main Street, Lagos",
+  "delivery_note": "Please add extra pepper",
   "notes": "Please add extra pepper"
 }
 ```
+
+Request notes:
+
+- `order_type` defaults to `"pickup"` and can be `"pickup"` or `"delivery"`
+- `delivery_note` is the primary delivery note field
+- `notes` is still accepted and treated as a backward-compatible alias for `delivery_note`
+- `customer_phone` is not accepted in this REST request body today; it remains `null` unless the backend already has a source for it
 
 Success response:
 
@@ -681,18 +839,22 @@ Success response:
   ],
   "total_amount": 3000,
   "status": "Pending",
+  "order_type": "delivery",
   "delivery_address": "123 Main Street, Lagos",
+  "delivery_note": "Please add extra pepper",
   "notes": "Please add extra pepper",
+  "customer_phone": null,
   "created_at": "2026-05-04T12:00:00",
   "payment_reference": null,
   "payment_status": "PENDING"
 }
 ```
 
-Known limitations:
+Current behavior notes:
 
-- `unit_price` is trusted from the client (not recalculated from DB)
-- `delivery_address` and `notes` are not persisted on the Order ORM model
+- Menu item pricing is resolved from the database when the order is created
+- `delivery_address` and `delivery_note` are persisted on `Order`
+- Normalized `order_items` rows are stored alongside the legacy `orders.items` snapshot for compatibility
 - Placeholder `user_id = 1` is used
 - `payment_reference` is `null` until `initialize_checkout` is called; `payment_status` starts as `"PENDING"`
 
@@ -711,6 +873,12 @@ Request body:
 ### `GET /api/v1/orders/{order_id}`
 
 Returns an order by ID.
+
+Response shape:
+
+- Uses normalized `order_items` when present
+- Falls back to parsing legacy `orders.items` for older rows
+- Includes `order_type`, `delivery_address`, `delivery_note`, `notes`, `customer_phone`, `payment_reference`, and `payment_status`
 
 ---
 
