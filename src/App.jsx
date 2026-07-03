@@ -16,6 +16,7 @@ import ChatPrototype from './pages/ChatPrototype';
 import VendorDetails from './pages/VendorDetails';
 import VendorOnboardingGuide from './pages/public/VendorOnboardingGuide';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
+import VendorDirectory from './pages/public/VendorDirectory';
 
 // Vendor PWA Components
 import { VendorAuthProvider } from './context/VendorAuthContext';
@@ -65,6 +66,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingLayout />}>
           <Route index element={<LandingPage />} />
+          <Route path="vendors" element={<VendorDirectory />} />
           <Route path="guide" element={<VendorOnboardingGuide />} />
           <Route path="privacy" element={<PrivacyPolicy />} />
         </Route>

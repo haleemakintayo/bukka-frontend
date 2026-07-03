@@ -63,6 +63,12 @@ Code-level API additions from `2026-05-15` are documented below even where they 
 - `GET /api/v1/vendors/{slug}/menu`
 - `GET /api/v1/vendors/{slug}/qr`
 
+- `GET /api/v1/vendors`                        → all active vendors
+- `GET /api/v1/vendors?search=mama`            → search by name
+- `GET /api/v1/vendors?location=unilag`       → filter by campus/location
+- `GET /api/v1/vendors?skip=0&limit=10`       → paginated
+
+
 **Vendor Dashboard**
 - `POST /api/v1/auth/vendor/login`
 - `GET /api/v1/vendors/me/dashboard`

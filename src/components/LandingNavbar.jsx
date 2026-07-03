@@ -36,7 +36,7 @@ const LandingNavbar = () => {
 
           {/* Navigation Links (Hidden on small screens) */}
           <div className="hidden md:flex space-x-8 items-center">
-            <Link to="/order/1" className="text-sm font-semibold text-gray-600 dark:text-bukka-soft-white hover:text-bukka-cyan transition-colors">Menu</Link>
+            <Link to="/vendors" className="text-sm font-semibold text-gray-600 dark:text-bukka-soft-white hover:text-[#FA6131] dark:hover:text-[#FA6131] transition-colors">Vendors</Link>
             <a href="#features" className="text-sm font-semibold text-gray-600 dark:text-bukka-soft-white hover:text-bukka-cyan transition-colors">Features</a>
             <a href="#how-it-works" className="text-sm font-semibold text-gray-600 dark:text-bukka-soft-white hover:text-bukka-cyan transition-colors">How it Works</a>
             <a href="#testimonials" className="text-sm font-semibold text-gray-600 dark:text-bukka-soft-white hover:text-bukka-cyan transition-colors">Testimonials</a>
