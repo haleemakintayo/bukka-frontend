@@ -38,4 +38,40 @@ export const vendorService = {
     const response = await apiClient.get('/vendors/me/analytics', { params: { days } });
     return response.data;
   },
+
+  // ── Availability endpoints ──────────────────────────────────────────────
+
+  /** GET /vendors/me/availability — returns { is_open, pause_until, pause_remaining_seconds, status_label } */
+  getAvailability: async () => {
+    const response = await apiClient.get('/vendors/me/availability');
+    return response.data;
+  },
+
+  /** POST /vendors/me/availability/open — opens the store, clears any pause */
+  openStore: async () => {
+    const response = await apiClient.post('/vendors/me/availability/open');
+    return response.data;
+  },
+
+  /**
+   * POST /vendors/me/availability/close
+   * @param {boolean} force — if true, closes even with in-flight orders
+   * Returns { status_label, ... } on 200
+   * Returns 409 { detail: { message, in_flight_order_ids } } if in-flight orders exist and force=false
+   */
+  closeStore: async (force = false) => {
+    const response = await apiClient.post('/vendors/me/availability/close', null, {
+      params: force ? { force: true } : {},
+    });
+    return response.data;
+  },
+
+  /**
+   * POST /vendors/me/availability/pause
+   * @param {number} minutes — 5 to 480
+   */
+  pauseStore: async (minutes) => {
+    const response = await apiClient.post('/vendors/me/availability/pause', { minutes });
+    return response.data;
+  },
 };

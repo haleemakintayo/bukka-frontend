@@ -8,7 +8,9 @@ It intentionally separates:
 - the live production behavior verified against `https://bukka-ai-backend-523632194f78.herokuapp.com`
 - the known gaps that still need backend fixes
 
-Last verified against production: `2026-05-12`
+Last verified against production: `2026-07-07`
+
+> **See also:** `VENDOR_JOURNEY.md` for the vendor-facing bot experience and order lifecycle guide.
 
 ## Base URLs
 
@@ -27,9 +29,9 @@ All API routes below are rooted at `/api/v1`.
 
 ## Current Production Summary
 
-Last verified against production: `2026-05-10`.
+Last verified against production: `2026-07-04`.
 
-Code-level API additions from `2026-05-15` are documented below even where they have not yet been re-verified against production.
+Code-level API additions from `2026-07-04` are documented below.
 
 ### ✅ All endpoints working live
 
@@ -37,8 +39,14 @@ Code-level API additions from `2026-05-15` are documented below even where they 
 - `POST /api/v1/admin/login`
 - `POST /api/v1/admin/refresh`
 
-**Admin - Analytics**
-- `GET /api/v1/admin/analytics` *(implemented in code on 2026-05-15; not yet re-verified live)*
+**Admin — Analytics**
+- `GET /api/v1/admin/analytics`
+
+**Admin — Master Catalog** *(added 2026-07-04)*
+- `GET /api/v1/admin/catalog`
+- `POST /api/v1/admin/catalog`
+- `PATCH /api/v1/admin/catalog/{item_id}`
+- `DELETE /api/v1/admin/catalog/{item_id}`
 
 **Admin — Vendor Management**
 - `POST /api/v1/admin/vendors/onboard`
@@ -49,7 +57,7 @@ Code-level API additions from `2026-05-15` are documented below even where they 
 - `PATCH /api/v1/admin/vendors/{id}/activate`
 - `POST /api/v1/admin/vendors/{id}/regenerate-pairing`
 
-**Admin — Menu Management**
+**Admin — Legacy Menu Management**
 - `GET /api/v1/admin/vendors/{id}/menu`
 - `POST /api/v1/admin/vendors/{id}/menu`
 - `PATCH /api/v1/admin/vendors/{id}/menu/{item_id}`
@@ -72,18 +80,29 @@ Code-level API additions from `2026-05-15` are documented below even where they 
 **Vendor Dashboard**
 - `POST /api/v1/auth/vendor/login`
 - `GET /api/v1/vendors/me/dashboard`
-- `GET /api/v1/vendors/me/analytics` *(implemented in code on 2026-05-15; not yet re-verified live)*
+- `GET /api/v1/vendors/me/analytics`
 - `GET /api/v1/vendors/me/orders`
-- `GET /api/v1/vendors/me/orders/{order_id}` *(implemented in code on 2026-05-15; not yet re-verified live)*
+- `GET /api/v1/vendors/me/orders/{order_id}`
 - `GET /api/v1/vendors/me/menu`
 - `POST /api/v1/vendors/me/menu`
 - `PATCH /api/v1/vendors/me/menu/{item_id}`
+
+**Vendor Menu V2 (Dynamic Menu System)** *(added 2026-07-04)*
+- `GET /api/v1/vendors/me/menu-v2`
+- `POST /api/v1/vendors/me/menu-v2`
+- `PATCH /api/v1/vendors/me/menu-v2/{item_id}`
+- `DELETE /api/v1/vendors/me/menu-v2/{item_id}`
+
+**Vendor Bot Commands** *(implemented in Telegram/WhatsApp chat, not REST)*
+- `/pending` — list today’s paid unconfirmed orders *(added 2026-07-07)*
+- `/confirm <id>` — approve a paid order + deduct stock + notify customer
+- `/add`, `/out`, `/in`, `/stock *`, `/menu`, `/setpin`, `/link`, `/help`
 
 **Webhooks & Misc**
 - `POST /api/v1/telegram/webhook`
 - `POST /api/v1/webhook`
 - `GET /api/v1/webhook`
-- `POST /api/v1/webhooks/paystack` *(new — Paystack payment events)*
+- `POST /api/v1/webhooks/paystack` *(Paystack payment events)*
 - `GET /`
 
 ---
@@ -489,6 +508,85 @@ Success response:
 
 ---
 
+## Admin Master Catalog
+
+> **Added 2026-07-04.** The master catalog is the platform-level list of canonical food items (e.g. "Jollof Rice", "Takeaway Pack"). Vendors pick from this catalog — or create custom items — when building their `VendorMenuItem` rows.
+
+All routes require `Authorization: Bearer <access_token>` from a superadmin.
+
+Implemented in `app/api/endpoints/admin_catalog.py`.
+
+### `GET /api/v1/admin/catalog`
+
+Lists all master catalog items.
+
+Query params:
+
+- `active_only` — boolean, default `false`. Set `true` to exclude soft-deleted items.
+
+Success response:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Jollof Rice",
+    "category": "Rice",
+    "unit_type": "per_portion",
+    "is_active": true
+  },
+  {
+    "id": 12,
+    "name": "Takeaway Pack",
+    "category": "Extras",
+    "unit_type": "flat_fee",
+    "is_active": true
+  }
+]
+```
+
+### `POST /api/v1/admin/catalog`
+
+Creates a new catalog item.
+
+Request body:
+
+```json
+{
+  "name": "Fried Rice",
+  "category": "Rice",
+  "unit_type": "per_portion",
+  "is_active": true
+}
+```
+
+`unit_type` values: `"per_portion"` | `"per_piece"` | `"flat_fee"`
+
+Success response `201`: The created `MasterCatalogResponse` object.
+
+Error: `409` if an item with the same name already exists.
+
+### `PATCH /api/v1/admin/catalog/{item_id}`
+
+Updates a catalog item. All fields optional.
+
+Request body:
+
+```json
+{
+  "category": "Protein",
+  "is_active": false
+}
+```
+
+Success response: Updated `MasterCatalogResponse` object.
+
+### `DELETE /api/v1/admin/catalog/{item_id}`
+
+Soft-deletes a catalog item by setting `is_active=false`. Returns `204 No Content`.
+
+---
+
 ## Public Vendor Self-Registration
 
 ### `POST /api/v1/vendors/register`
@@ -794,6 +892,116 @@ Success response: The updated `MenuItemPublic` object.
 
 ---
 
+## Vendor Menu V2 (Dynamic Menu System)
+
+> **Added 2026-07-04.** This is the new dynamic menu system backed by the `vendor_menu_items` table. It replaces the legacy `menu_items` table for the ordering flow. The LLM and cart engine read from this table first, with a graceful fallback to legacy `menu_items` if V2 is empty.
+
+All routes require `Authorization: Bearer <access_token>` with `role="vendor"`.
+
+Implemented in `app/api/endpoints/admin_catalog.py` (`vendor_menu_router`).
+
+### Key concepts
+
+| Concept | Description |
+|---|---|
+| `unit_type` | How the item is priced: `per_portion`, `per_piece`, or `flat_fee` |
+| `is_compulsory` | If `true`, item is automatically added to the cart at checkout (e.g. Takeaway Pack). Auntie Chioma will never manually extract it. |
+| `catalog_item_id` | Optional link to a `MasterCatalog` row. If `null`, the item is a fully custom vendor item. |
+
+### `GET /api/v1/vendors/me/menu-v2`
+
+Lists all `VendorMenuItem` rows for the authenticated vendor.
+
+Query params:
+
+- `available_only` — boolean, default `false`. Set `true` to show only live orderable items.
+
+Success response:
+
+```json
+[
+  {
+    "id": 1,
+    "vendor_id": 3,
+    "catalog_item_id": 1,
+    "name": "Jollof Rice",
+    "category": "Rice",
+    "unit_type": "per_portion",
+    "price": 300,
+    "description": null,
+    "is_available": true,
+    "is_compulsory": false,
+    "stock_qty": null,
+    "reorder_level": null
+  },
+  {
+    "id": 5,
+    "vendor_id": 3,
+    "catalog_item_id": 12,
+    "name": "Takeaway Pack",
+    "category": "Extras",
+    "unit_type": "flat_fee",
+    "price": 200,
+    "description": null,
+    "is_available": true,
+    "is_compulsory": true,
+    "stock_qty": null,
+    "reorder_level": null
+  }
+]
+```
+
+### `POST /api/v1/vendors/me/menu-v2`
+
+Adds a new item to the vendor's menu. Can link to a master catalog item (`catalog_item_id`) or be fully custom (`catalog_item_id: null`).
+
+Request body:
+
+```json
+{
+  "name": "Takeaway Pack",
+  "price": 200,
+  "unit_type": "flat_fee",
+  "category": "Extras",
+  "is_compulsory": true,
+  "catalog_item_id": 12
+}
+```
+
+Success response `201`: The created `VendorMenuItemResponse` object.
+
+Error: `409` if an item with the same name already exists for this vendor.
+
+Error: `404` if `catalog_item_id` is provided but does not exist or is inactive.
+
+### `PATCH /api/v1/vendors/me/menu-v2/{item_id}`
+
+Updates any field on a vendor menu item. Useful for toggling availability, changing price, or flipping the compulsory flag.
+
+Request body (all fields optional):
+
+```json
+{
+  "price": 350,
+  "is_available": false,
+  "is_compulsory": false,
+  "stock_qty": 20,
+  "reorder_level": 5
+}
+```
+
+Success response: Updated `VendorMenuItemResponse` object.
+
+Error: `404` if the item does not belong to this vendor.
+
+### `DELETE /api/v1/vendors/me/menu-v2/{item_id}`
+
+Permanently removes a vendor menu item. Returns `204 No Content`.
+
+Error: `404` if the item does not belong to this vendor.
+
+---
+
 ## Orders
 
 ### `POST /api/v1/orders`
@@ -949,21 +1157,102 @@ Clears demo chats. Requires `X-Admin-Reset-Token` header.
 
 ## Pairing Flow
 
-The implemented pairing flow is bot-driven, not frontend-only.
+The pairing flow is bot-driven, not frontend-only.
 
 1. Admin onboards a vendor (or vendor self-registers) and receives a server-generated `pairing_code`.
 2. The vendor sends `/link <pairing_code>` to the Telegram or WhatsApp bot.
 3. The backend binds that vendor to `telegram_chat_id` or `whatsapp_number`.
 4. The backend clears the `pairing_code` after successful linking.
-5. Customers enter the storefront by slug:
+5. **The vendor receives a confirmation message** that now includes:
+   - Confirmation of successful linking
+   - A `/setpin` reminder with instructions (new — 2026-07-07)
+   - The full vendor command list
+6. Customers enter the storefront by slug:
    - Telegram: `/start <vendor-slug>`
    - WhatsApp: message text containing `[ref:<vendor-slug>]`
 
-For self-registered vendors, the pairing code is issued at registration but **the bot will only accept `/link` after the admin activates the vendor** (is_active=True).
+For self-registered vendors, the pairing code is issued at registration but **the bot will only accept `/link` after the admin activates the vendor** (`is_active=True`).
 
 Security requirement:
 
 - `pairing_code` must not be exposed by public vendor endpoints
+
+---
+
+## Vendor Bot Commands
+
+Bot commands are accepted from the vendor's linked `telegram_chat_id` or `whatsapp_number`. They are not REST endpoints.
+
+### `/pending` *(new — 2026-07-07)*
+
+Lists today's paid orders with `payment_status = "PAID"` and `status` of `"Pending"` or `"Paid"` — i.e. orders that have been paid but not yet confirmed by the vendor.
+
+Example response:
+
+```
+📋 Pending Orders — 2 to confirm
+
+1. Order #47 🏪 Pickup
+   👤 Chidi Obi | 📞 08012345678
+   🛒 2x Jollof Rice, 1x Chicken, 1x Takeaway Pack
+   💰 ₦1,200
+   → /confirm 47
+
+2. Order #48 🚚 Delivery
+   👤 Ngozi Eze | 📞 08098765432
+   🛒 1x Fried Rice, 1x Fish, 1x Takeaway Pack
+   💰 ₦1,250
+   → /confirm 48
+```
+
+If no pending orders exist: `"📋 No pending orders right now. All paid orders have been confirmed. ✅"`
+
+### `/confirm <order_id>`
+
+Approves a paid order.
+
+1. Sets `Order.status = "Confirmed"`
+2. Deducts stock via `apply_sale_stock_deduction()`
+3. Sends customer: *"Order #47 confirmed. We are packing it now."*
+4. Returns low-stock alerts to vendor if triggered
+
+Also accepts customer name (`/confirm Chidi`). If multiple users match the name, the bot requests an order ID.
+
+### Enriched Payment Alert *(updated — 2026-07-07)*
+
+When Paystack fires `charge.success`, the vendor receives a full itemised receipt instead of the old generic message. Built by `_build_vendor_order_alert()` in `webhooks.py`.
+
+**Pickup alert format:**
+```
+✅ New Paid Order! #47 🏪 Pickup
+
+👤 <customer_name>  |  📞 <customer_phone>
+
+🛒 Items:
+  • 2x Jollof Rice — ₦600
+  • 1x Chicken — ₦400
+  • 1x Takeaway Pack — ₦200
+
+Total paid: ₦1,200
+Ref: `PSK_ref_abc123`
+
+✔️ Reply /confirm 47 when the order is ready.
+```
+
+**Delivery alert additions:**
+- `📍 <delivery_address>`
+- `📝 <delivery_note>` (if present)
+- Separate food subtotal and delivery fee lines
+
+**Stock warning (if triggered):**
+- `⚠️ *Stock Issue:* <message>`
+- `⚠️ *Low Stock:* <item> has N left (reorder at M)`
+
+A plain-text fallback fires if the enriched builder throws an exception.
+
+### Other Commands
+
+See `VENDOR_JOURNEY.md` → *Full Command Reference* for the complete command table.
 
 ---
 
@@ -972,8 +1261,9 @@ Security requirement:
 1. Vendor submits `POST /api/v1/vendors/register` → receives `vendor_id` and `pairing_code`
 2. Admin sees pending vendor in `GET /api/v1/admin/vendors?is_active=false`
 3. Admin reviews and calls `PATCH /api/v1/admin/vendors/{id}/activate` with `{"is_active": true}`
-4. Vendor receives the `pairing_code` (shared at registration) and sends `/link <code>` to the bot
-5. Vendor is live
+4. Vendor sends `/link <code>` to the bot → receives PIN reminder + full command list
+5. Vendor sets PIN via `/setpin <pin>` → can now log into the web dashboard
+6. Vendor is live
 
 ---
 
@@ -986,3 +1276,4 @@ When the backend changes, update this file in the same pull request if any of th
 - response body shape
 - required environment variables
 - live-known production blockers or security issues
+- vendor bot commands or notification formats (also update `VENDOR_JOURNEY.md`)
