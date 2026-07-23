@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   QrCode,
   MessageCircle,
@@ -10,7 +10,11 @@ import {
   Zap,
   Users,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+import bukkaScreenshot from '../../assets/bukkaaiscreenshot.png';
+import bukkaScreenshot2 from '../../assets/bukkaaiscreenshot2.png';
 
 const stats = [
   { label: 'Avg. order time', value: '45s' },
@@ -97,7 +101,96 @@ const faqs = [
   },
 ];
 
+const ScreenshotCarousel = ({ screenshots }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (isHovered) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % screenshots.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [isHovered, screenshots.length]);
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev === 0 ? screenshots.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % screenshots.length);
+  };
+
+  return (
+    <div
+      className="flex flex-col items-center justify-center max-w-md mx-auto w-full group/carousel"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative w-full flex justify-center items-center py-4">
+        {/* Soft circular aura glow that diffuses naturally without hard box clipping */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-tr from-bukka-green/15 via-bukka-orange/15 to-bukka-green/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Carousel slide container with soft shadow */}
+        <div className="relative w-full max-w-[360px] overflow-hidden rounded-[2.5rem] shadow-2xl">
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+          >
+            {screenshots.map((img, idx) => (
+              <div key={idx} className="w-full flex-shrink-0 flex justify-center items-center">
+                <img
+                  src={img}
+                  alt={`Bukka AI App Preview ${idx + 1}`}
+                  className="w-full h-auto object-contain rounded-[2.5rem]"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Navigation controls */}
+          <button
+            type="button"
+            onClick={handlePrev}
+            aria-label="Previous screenshot"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 shadow-lg"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            aria-label="Next screenshot"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 shadow-lg"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Slide dots */}
+      <div className="mt-4 flex items-center gap-2">
+        {screenshots.map((_, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setCurrentIndex(idx)}
+            aria-label={`Go to slide ${idx + 1}`}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              currentIndex === idx
+                ? 'w-8 bg-bukka-orange shadow-sm'
+                : 'w-2 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const LandingPage = () => {
+  const screenshots = [bukkaScreenshot, bukkaScreenshot2];
+
   return (
     <div className="relative bg-gradient-to-b from-white via-gray-50 to-white dark:from-bukka-dark-surface dark:via-bukka-dark-surface dark:to-bukka-dark-surface text-gray-900 dark:text-bukka-soft-white">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(18,140,126,0.12),_transparent_45%),radial-gradient(circle_at_80%_30%,_rgba(230,81,0,0.10),_transparent_40%)]" />
@@ -150,46 +243,7 @@ const LandingPage = () => {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-bukka-card-surface rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-xl p-6 max-w-md mx-auto w-full">
-              <div className="flex items-center justify-between border-b border-gray-50 dark:border-gray-800 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-bukka-orange flex items-center justify-center text-white font-bold tracking-tighter">AC</div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-bukka-soft-white leading-tight">WhatsApp Orders</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Live preview</p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-bukka-orange/10 px-3 py-1.5 text-xs font-bold tracking-tight text-[#0F6B43] dark:text-bukka-cyan">
-                  Auntie Chioma AI
-                </span>
-              </div>
-              <div className="mt-6 space-y-3 text-sm">
-                <div className="rounded-2xl bg-gray-100 dark:bg-gray-800 px-4 py-3 text-gray-700 dark:text-gray-300">
-                  Abeg I wan 2 plates of jollof + chicken.
-                </div>
-                <div className="ml-auto rounded-2xl bg-bukka-green/10 px-4 py-3 text-gray-700 dark:text-gray-300">
-                  No wahala. Add drink? Coke or Fanta?
-                </div>
-                <div className="rounded-2xl bg-gray-100 dark:bg-gray-800 px-4 py-3 text-gray-700 dark:text-gray-300">
-                  Coke. How much total?
-                </div>
-                <div className="ml-auto rounded-2xl bg-bukka-green/10 px-4 py-3 text-gray-700 dark:text-gray-300">
-                  ₦2,400. Tap to pay and I go send your order to the kitchen.
-                </div>
-              </div>
-              <div className="mt-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-bukka-dark-surface px-4 py-3">
-                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>Order Total</span>
-                  <span className="font-semibold text-gray-900 dark:text-bukka-soft-white">₦2,400</span>
-                </div>
-                <button
-                  type="button"
-                  className="mt-4 w-full rounded-full bg-bukka-orange py-3 text-sm font-bold text-white shadow-md hover:bg-[#0c5736] transition-colors"
-                >
-                  Pay Now
-                </button>
-              </div>
-            </div>
+            <ScreenshotCarousel screenshots={screenshots} />
           </div>
         </div>
       </section>
