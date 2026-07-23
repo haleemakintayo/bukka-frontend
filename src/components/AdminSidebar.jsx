@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, MessageCircle, LogOut, LayoutDashboard, Menu, X } from 'lucide-react';
+import { Users, UserPlus, MessageCircle, LogOut, LayoutDashboard, Menu, X, Layers, CreditCard, BarChart2, Wallet } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 
 const AdminSidebar = ({ children }) => {
@@ -37,6 +37,26 @@ const AdminSidebar = ({ children }) => {
       path: "/admin/vendors",
       name: "Vendor Directory",
       icon: <Users size={20} />
+    },
+    {
+      path: "/admin/catalog",
+      name: "Master Catalog",
+      icon: <Layers size={20} />
+    },
+    {
+      path: "/admin/transactions",
+      name: "Order Audit",
+      icon: <CreditCard size={20} />
+    },
+    {
+      path: "/admin/analytics",
+      name: "Advanced Analytics",
+      icon: <BarChart2 size={20} />
+    },
+    {
+      path: "/admin/payouts",
+      name: "Float & Payouts",
+      icon: <Wallet size={20} />
     },
     {
       path: "/admin/chat",

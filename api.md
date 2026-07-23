@@ -192,32 +192,160 @@ Request body:
 
 All routes in this section require `Authorization: Bearer <access_token>` from a superadmin.
 
-### `GET /api/v1/admin/analytics`
+### `GET /api/v1/admin/analytics/detailed`
 
-Returns platform-level analytics for the admin dashboard.
+*(Added 2026-07-23)* Returns comprehensive platform metrics, date-windowed GMV, conversion metrics, order status counts, top vendors ranking, and daily sales time-series.
+
+Query params:
+
+- `days` optional integer (default `30`, min `1`, max `365`)
 
 Success response:
 
 ```json
 {
-  "platform_gmv": 125000,
-  "platform_revenue": 1450,
-  "total_vendors": 18,
-  "conversion_rate": 0.72
+  "days": 30,
+  "platform_gmv": 450000,
+  "platform_revenue": 7500,
+  "total_paid_orders": 150,
+  "total_pending_orders": 12,
+  "total_failed_orders": 5,
+  "total_cancelled_orders": 8,
+  "total_rejected_orders": 2,
+  "average_order_value": 3000.0,
+  "conversion_rate": 0.8982,
+  "pickup_orders_count": 90,
+  "delivery_orders_count": 60,
+  "top_vendors": [
+    {
+      "vendor_id": 1,
+      "business_name": "Mama Sade Kitchen",
+      "total_gmv": 250000,
+      "paid_orders_count": 80
+    }
+  ],
+  "sales_timeline": [
+    {
+      "date": "2026-07-22",
+      "gmv": 18000,
+      "order_count": 6
+    }
+  ]
 }
 ```
 
-Response fields:
+---
 
-- `platform_gmv`: Sum of `total_price` across all orders where `payment_status="PAID"`
-- `platform_revenue`: `(count of PAID orders) * 50`
-- `total_vendors`: Total registered vendor count
-- `conversion_rate`: `paid_count / (paid_count + pending_count + failed_count)`, or `0.0` if the denominator is zero
+## Admin Transaction Operations
 
-Status:
+All routes require `Authorization: Bearer <access_token>` from a superadmin.
 
-- Implemented in `app/api/endpoints/admin.py`
-- Added in code on `2026-05-15`
+### `GET /api/v1/admin/transactions`
+
+*(Added 2026-07-23)* Returns a paginated list of all platform transactions/orders with rich filtering options.
+
+Query params:
+
+- `payment_status`: Filter by payment status (`PAID`, `PENDING`, `FAILED`)
+- `vendor_id`: Filter by specific vendor ID
+- `order_type`: Filter by order type (`pickup`, `delivery`)
+- `search`: Search string against customer name, phone number, or Paystack reference
+- `skip`: Integer, default `0`
+- `limit`: Integer, default `20` (max `100`)
+
+Success response:
+
+```json
+{
+  "total": 150,
+  "skip": 0,
+  "limit": 20,
+  "transactions": [
+    {
+      "order_id": 47,
+      "vendor_id": 1,
+      "vendor_name": "Mama Sade Kitchen",
+      "vendor_slug": "mama-sade-kitchen",
+      "user_id": 4,
+      "customer_name": "Ada",
+      "customer_phone": "2348011111111",
+      "order_type": "delivery",
+      "delivery_address": "Hall 2, Room 14",
+      "delivery_fee": 300,
+      "total_amount": 3500,
+      "status": "Paid",
+      "payment_status": "PAID",
+      "payment_reference": "PSK_ref_abc123",
+      "created_at": "2026-07-23T12:00:00",
+      "items": [
+        {
+          "menu_item_id": 1,
+          "menu_item_name": "Jollof Rice",
+          "quantity": 2,
+          "unit_price": 1500,
+          "line_total": 3000
+        }
+      ]
+    }
+  ]
+}
+```
+
+### `GET /api/v1/admin/transactions/{order_id}`
+
+*(Added 2026-07-23)* Returns single transaction details for any platform order.
+
+Success response: Single `AdminTransactionResponse` object.
+
+---
+
+## Admin Payouts & Merchant Balance Operations
+
+All routes require `Authorization: Bearer <access_token>` from a superadmin.
+
+> ⚠️ **MANDATORY PAYSTACK SETTING ACTION ITEM:**  
+> To allow automated disbursals via the Transfers API, **OTP MUST BE DISABLED** on your Paystack Dashboard:  
+> **Paystack Dashboard $\rightarrow$ Settings $\rightarrow$ Transfers $\rightarrow$ Disable OTP requirement**.
+
+### `GET /api/v1/admin/paystack/balance`
+
+*(Added 2026-07-23)* Checks the merchant account float balance on Paystack to monitor disbursal liquidity.
+
+Success response:
+
+```json
+{
+  "status": "success",
+  "ngn_balance_naira": 150000.0,
+  "ngn_balance_kobo": 15000000,
+  "min_float_threshold_naira": 50000.0,
+  "is_below_threshold": false,
+  "balances_raw": [
+    {
+      "currency": "NGN",
+      "balance": 15000000
+    }
+  ]
+}
+```
+
+### `POST /api/v1/admin/vendors/{vendor_id}/payout`
+
+*(Added 2026-07-23)* Manually triggers a same-day payout for a specific vendor out of our Paystack balance.
+
+Success response:
+
+```json
+{
+  "status": "initiated",
+  "payout_id": 4,
+  "vendor_id": 1,
+  "amount_naira": 12500,
+  "reference": "bukka_payout_1_20260723180000_a1b2c3",
+  "transfer_code": "TRF_151ab23cd45ef",
+  "payout_status": "pending"
+}
+```
 
 ---
 

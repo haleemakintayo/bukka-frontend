@@ -171,4 +171,64 @@ export const adminService = {
     );
     return response.data;
   },
+
+  // ─── Master Catalog Management ────────────────────────────────────────────
+
+  /** GET /admin/catalog — List master catalog items */
+  getMasterCatalog: async () => {
+    const response = await apiClient.get('/admin/catalog');
+    return response.data;
+  },
+
+  /** POST /admin/catalog — Create a new master catalog item */
+  addMasterCatalogItem: async (payload) => {
+    const response = await apiClient.post('/admin/catalog', payload);
+    return response.data;
+  },
+
+  /** PATCH /admin/catalog/{itemId} — Update a master catalog item */
+  updateMasterCatalogItem: async (itemId, payload) => {
+    const response = await apiClient.patch(`/admin/catalog/${itemId}`, payload);
+    return response.data;
+  },
+
+  /** DELETE /admin/catalog/{itemId} — Soft delete a master catalog item */
+  deleteMasterCatalogItem: async (itemId) => {
+    const response = await apiClient.delete(`/admin/catalog/${itemId}`);
+    return response.data;
+  },
+
+  // ─── Advanced Analytics, Transactions & Payouts ───────────────────────────
+
+  /** GET /admin/analytics/detailed — Detailed platform metrics */
+  getDetailedAnalytics: async (days = 30) => {
+    const response = await apiClient.get('/admin/analytics/detailed', {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  /** GET /admin/transactions — Audit platform transactions */
+  getTransactions: async (params = {}) => {
+    const response = await apiClient.get('/admin/transactions', { params });
+    return response.data;
+  },
+
+  /** GET /admin/transactions/{orderId} — Transaction detail */
+  getTransactionDetail: async (orderId) => {
+    const response = await apiClient.get(`/admin/transactions/${orderId}`);
+    return response.data;
+  },
+
+  /** GET /admin/paystack/balance — Check Paystack float balance */
+  getPaystackBalance: async () => {
+    const response = await apiClient.get('/admin/paystack/balance');
+    return response.data;
+  },
+
+  /** POST /admin/vendors/{vendorId}/payout — Trigger same-day manual payout */
+  triggerVendorPayout: async (vendorId) => {
+    const response = await apiClient.post(`/admin/vendors/${vendorId}/payout`);
+    return response.data;
+  },
 };

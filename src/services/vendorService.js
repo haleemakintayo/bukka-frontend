@@ -40,6 +40,24 @@ export const vendorService = {
     return response.data;
   },
 
+  /** GET /vendors/me/menu-v2 — dynamic menu V2 system */
+  getMenuV2: async () => {
+    const response = await apiClient.get('/vendors/me/menu-v2');
+    return response.data;
+  },
+
+  /** POST /vendors/me/menu-v2 — add item (supports unit_type, stock_qty, reorder_level, is_compulsory) */
+  addMenuV2Item: async (data) => {
+    const response = await apiClient.post('/vendors/me/menu-v2', data);
+    return response.data;
+  },
+
+  /** PATCH /vendors/me/menu-v2/{itemId} — update item details and flags */
+  updateMenuV2Item: async (itemId, data) => {
+    const response = await apiClient.patch(`/vendors/me/menu-v2/${itemId}`, data);
+    return response.data;
+  },
+
   /** PATCH /vendors/me/menu/{itemId} — update name, price, category, description, is_available */
   updateMenuItem: async (itemId, data) => {
     const response = await apiClient.patch(`/vendors/me/menu/${itemId}`, data);

@@ -14,6 +14,10 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import ChatPrototype from './pages/ChatPrototype';
 import VendorDetails from './pages/VendorDetails';
+import MasterCatalogManager from './pages/admin/MasterCatalogManager';
+import OrderAuditTransactions from './pages/admin/OrderAuditTransactions';
+import AdvancedAnalytics from './pages/admin/AdvancedAnalytics';
+import MerchantFloatPayouts from './pages/admin/MerchantFloatPayouts';
 import VendorOnboardingGuide from './pages/public/VendorOnboardingGuide';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import VendorDirectory from './pages/public/VendorDirectory';
@@ -23,7 +27,9 @@ import { VendorAuthProvider } from './context/VendorAuthContext';
 import VendorLayout from './layouts/VendorLayout';
 import VendorLogin from './pages/vendor/VendorLogin';
 import VendorDashboard from './pages/vendor/VendorDashboard';
+import VendorOrdersFulfillment from './pages/vendor/VendorOrdersFulfillment';
 import VendorMenuManager from './pages/vendor/VendorMenuManager';
+import VendorEarnings from './pages/vendor/VendorEarnings';
 
 // Student Page Components
 import VendorMenu from './pages/public/VendorMenu';
@@ -81,7 +87,9 @@ function App() {
           <Route path="login" element={<VendorLogin />} />
           <Route element={<VendorLayout />}>
             <Route path="dashboard" element={<VendorDashboard />} />
+            <Route path="orders" element={<VendorOrdersFulfillment />} />
             <Route path="menu" element={<VendorMenuManager />} />
+            <Route path="earnings" element={<VendorEarnings />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
         </Route>
@@ -95,6 +103,10 @@ function App() {
           <Route path="vendors" element={<VendorList />} />
           <Route path="vendors/:id" element={<VendorDetails />} />
           <Route path="onboard" element={<OnboardVendorForm />} />
+          <Route path="catalog" element={<MasterCatalogManager />} />
+          <Route path="transactions" element={<OrderAuditTransactions />} />
+          <Route path="analytics" element={<AdvancedAnalytics />} />
+          <Route path="payouts" element={<MerchantFloatPayouts />} />
           <Route path="chat" element={<ChatPrototype />} />
           {/* Redirect to dashboard by default */}
           <Route index element={<Navigate to="dashboard" replace />} />

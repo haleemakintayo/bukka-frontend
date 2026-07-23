@@ -3,7 +3,7 @@ import { vendorService } from '../../services/vendorService';
 import { getApiErrorMessage } from '../../services/api';
 import {
   Loader2, Check, X, Search, Plus, UtensilsCrossed,
-  ChevronDown, ChevronUp, Pencil, Trash2, CheckCircle2, XCircle, AlertTriangle,
+  Pencil, Trash2, CheckCircle2, XCircle, AlertTriangle, ShieldCheck, Tag, Box
 } from 'lucide-react';
 
 // ── Toast System ─────────────────────────────────────────────────────
@@ -23,13 +23,27 @@ const Toast = ({ toast }) => {
   );
 };
 
-// ── Shared Input Class ───────────────────────────────────────────────
 const inputClass =
-  'w-full bg-[#0f1118] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FA6131] focus:ring-1 focus:ring-[#FA6131]/50 transition-all';
+  'w-full bg-[#0f1118] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FA6131] focus:ring-1 focus:ring-[#FA6131]/50 transition-all';
 
-// ── Add Item Modal ──────────────────────────────────────────────────
+const UNIT_TYPE_OPTIONS = [
+  { value: 'per_portion', label: 'Per Portion', icon: '🍛' },
+  { value: 'per_piece', label: 'Per Piece', icon: '🍗' },
+  { value: 'flat_fee', label: 'Flat Fee', icon: '📦' },
+];
+
+// ── Add Item Modal (V2 System) ──────────────────────────────────────
 const AddItemModal = ({ isOpen, onClose, onSuccess, showToast }) => {
-  const [form, setForm] = useState({ name: '', price: '', category: '', description: '' });
+  const [form, setForm] = useState({
+    name: '',
+    price: '',
+    category: 'Rice',
+    unit_type: 'per_portion',
+    stock_qty: '',
+    reorder_level: '',
+    is_compulsory: false,
+    description: '',
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -46,13 +60,25 @@ const AddItemModal = ({ isOpen, onClose, onSuccess, showToast }) => {
         name: form.name.trim(),
         price: Number(form.price),
         category: form.category.trim() || 'General',
+        unit_type: form.unit_type,
+        is_compulsory: form.is_compulsory,
       };
-      if (form.description.trim()) {
-        payload.description = form.description.trim();
-      }
-      await vendorService.addMenuItem(payload);
-      setForm({ name: '', price: '', category: '', description: '' });
-      showToast('success', `"${payload.name}" added to menu! 🎉`);
+      if (form.stock_qty !== '') payload.stock_qty = Number(form.stock_qty);
+      if (form.reorder_level !== '') payload.reorder_level = Number(form.reorder_level);
+      if (form.description.trim()) payload.description = form.description.trim();
+
+      await vendorService.addMenuV2Item(payload);
+      setForm({
+        name: '',
+        price: '',
+        category: 'Rice',
+        unit_type: 'per_portion',
+        stock_qty: '',
+        reorder_level: '',
+        is_compulsory: false,
+        description: '',
+      });
+      showToast('success', `"${payload.name}" added to V2 menu! 🎉`);
       onSuccess();
       onClose();
     } catch (err) {
@@ -63,113 +89,133 @@ const AddItemModal = ({ isOpen, onClose, onSuccess, showToast }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full sm:max-w-md bg-[#171B26] border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl z-10 animate-in slide-in-from-bottom duration-300">
-        {/* Drag handle (mobile) */}
-        <div className="sm:hidden flex justify-center mb-4">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-
-        <div className="flex items-center justify-between mb-6">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md bg-[#171B26] border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl z-10 max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="flex items-center justify-between border-b border-white/5 pb-3">
           <div>
-            <h3 className="text-lg font-extrabold text-white">Add Menu Item</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Fill in the details for your new item.</p>
+            <h3 className="text-lg font-extrabold text-white">Add Menu Item (V2)</h3>
+            <p className="text-xs text-gray-500">Configure prices, stock, and compulsory checkout items.</p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
-          >
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white">
             <X size={16} />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-              Item Name *
-            </label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Item Name *</label>
             <input
               type="text"
+              required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g. Jollof Rice"
-              required
+              placeholder="e.g. Jollof Rice, Takeaway Pack"
               className={inputClass}
-              autoFocus
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-                Price (₦) *
-              </label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Price (₦) *</label>
               <input
                 type="number"
+                required
+                min="0"
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
                 placeholder="1500"
-                required
-                min="0"
                 className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-                Category
-              </label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Category</label>
               <input
                 type="text"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                placeholder="e.g. Rice"
+                placeholder="e.g. Rice, Extras"
                 className={inputClass}
               />
             </div>
           </div>
 
+          {/* Unit Type */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-              Description
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Optional — short description of this item"
-              rows={2}
-              className={`${inputClass} resize-none`}
-            />
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Unit Portioning</label>
+            <div className="grid grid-cols-3 gap-2">
+              {UNIT_TYPE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, unit_type: opt.value })}
+                  className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                    form.unit_type === opt.value
+                      ? 'bg-[#FA6131]/10 border-[#FA6131]/40 text-[#FA6131]'
+                      : 'bg-white/5 border-white/5 text-gray-500'
+                  }`}
+                >
+                  {opt.icon} {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Stock Tracking */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Stock Qty (Optional)</label>
+              <input
+                type="number"
+                min="0"
+                value={form.stock_qty}
+                onChange={(e) => setForm({ ...form, stock_qty: e.target.value })}
+                placeholder="Untracked"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Low-Stock Alert Level</label>
+              <input
+                type="number"
+                min="0"
+                value={form.reorder_level}
+                onChange={(e) => setForm({ ...form, reorder_level: e.target.value })}
+                placeholder="5"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          {/* Compulsory Item Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <div>
+              <p className="text-xs font-bold text-white flex items-center gap-1">
+                <ShieldCheck size={14} className="text-[#2CD6EB]" /> Compulsory Checkout Item
+              </p>
+              <p className="text-[10px] text-gray-500">Auto-injected into customer cart (e.g. Takeaway Pack)</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, is_compulsory: !form.is_compulsory })}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                form.is_compulsory
+                  ? 'bg-[#2CD6EB]/20 border-[#2CD6EB]/40 text-[#2CD6EB]'
+                  : 'bg-white/5 border-white/5 text-gray-500'
+              }`}
+            >
+              {form.is_compulsory ? 'Compulsory' : 'Optional'}
+            </button>
           </div>
 
           <button
             type="submit"
             disabled={saving || !form.name.trim() || !form.price}
-            className="w-full bg-gradient-to-r from-[#FA6131] to-[#e04e1f] text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-[#FA6131]/20 flex justify-center items-center gap-2 hover:shadow-[#FA6131]/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full py-3 bg-[#FA6131] hover:bg-[#e04e1f] text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-[#FA6131]/20 flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {saving ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus size={16} />
-                Add to Menu
-              </>
-            )}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Add to Menu
           </button>
         </form>
       </div>
@@ -177,27 +223,23 @@ const AddItemModal = ({ isOpen, onClose, onSuccess, showToast }) => {
   );
 };
 
-// ── Edit Item Modal ─────────────────────────────────────────────────
+// ── Edit Item Modal ──────────────────────────────────────────────────
 const EditItemModal = ({ item, onClose, onSuccess, showToast }) => {
   const [form, setForm] = useState({
     name: item?.name || '',
     price: item?.price?.toString() || '',
     category: item?.category || '',
     description: item?.description || '',
+    unit_type: item?.unit_type || 'per_portion',
+    stock_qty: item?.stock_qty != null ? item.stock_qty.toString() : '',
+    reorder_level: item?.reorder_level != null ? item.reorder_level.toString() : '',
+    is_compulsory: item?.is_compulsory ?? false,
+    is_available: item?.is_available ?? true,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
   if (!item) return null;
-
-  const hasChanges = () => {
-    return (
-      form.name.trim() !== (item.name || '') ||
-      Number(form.price) !== (item.price || 0) ||
-      form.category.trim() !== (item.category || '') ||
-      form.description.trim() !== (item.description || '')
-    );
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -206,19 +248,19 @@ const EditItemModal = ({ item, onClose, onSuccess, showToast }) => {
     setSaving(true);
     setError(null);
     try {
-      const payload = {};
-      if (form.name.trim() !== item.name) payload.name = form.name.trim();
-      if (Number(form.price) !== item.price) payload.price = Number(form.price);
-      if (form.category.trim() !== (item.category || '')) payload.category = form.category.trim() || 'General';
-      if (form.description.trim() !== (item.description || '')) payload.description = form.description.trim();
+      const payload = {
+        name: form.name.trim(),
+        price: Number(form.price),
+        category: form.category.trim() || 'General',
+        unit_type: form.unit_type,
+        is_compulsory: form.is_compulsory,
+        is_available: form.is_available,
+      };
+      if (form.stock_qty !== '') payload.stock_qty = Number(form.stock_qty);
+      if (form.reorder_level !== '') payload.reorder_level = Number(form.reorder_level);
+      if (form.description.trim()) payload.description = form.description.trim();
 
-      // Only call API if there are actual changes
-      if (Object.keys(payload).length === 0) {
-        onClose();
-        return;
-      }
-
-      await vendorService.updateMenuItem(item.id, payload);
+      await vendorService.updateMenuV2Item(item.id, payload);
       showToast('success', `"${form.name.trim()}" updated! ✏️`);
       onSuccess();
       onClose();
@@ -230,121 +272,96 @@ const EditItemModal = ({ item, onClose, onSuccess, showToast }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full sm:max-w-md bg-[#171B26] border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl z-10 animate-in slide-in-from-bottom duration-300">
-        {/* Drag handle (mobile) */}
-        <div className="sm:hidden flex justify-center mb-4">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-extrabold text-white">Edit Item</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Update the details of "{item.name}"</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
-          >
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md bg-[#171B26] border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl z-10 max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="flex items-center justify-between border-b border-white/5 pb-3">
+          <h3 className="text-base font-extrabold text-white">Edit Menu Item</h3>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white">
             <X size={16} />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-              Item Name *
-            </label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Item Name *</label>
             <input
               type="text"
+              required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g. Jollof Rice"
-              required
               className={inputClass}
-              autoFocus
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-                Price (₦) *
-              </label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Price (₦) *</label>
               <input
                 type="number"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-                placeholder="1500"
                 required
                 min="0"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
                 className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-                Category
-              </label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Category</label>
               <input
                 type="text"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                placeholder="e.g. Rice"
                 className={inputClass}
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-              Description
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Optional — short description of this item"
-              rows={2}
-              className={`${inputClass} resize-none`}
-            />
+          {/* Availability & Compulsory */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Stock Availability</label>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, is_available: !form.is_available })}
+                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                  form.is_available
+                    ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                    : 'bg-red-500/10 border-red-500/30 text-red-400'
+                }`}
+              >
+                {form.is_available ? 'Available' : 'Sold Out'}
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Checkout Mode</label>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, is_compulsory: !form.is_compulsory })}
+                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                  form.is_compulsory
+                    ? 'bg-[#2CD6EB]/20 border-[#2CD6EB]/40 text-[#2CD6EB]'
+                    : 'bg-white/5 border-white/5 text-gray-500'
+                }`}
+              >
+                {form.is_compulsory ? 'Compulsory' : 'Optional'}
+              </button>
+            </div>
           </div>
 
-          <div className="flex gap-3 mt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3.5 rounded-xl font-bold text-sm bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
-            >
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-white/5 text-xs font-bold text-gray-400">
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving || !form.name.trim() || !form.price || !hasChanges()}
-              className="flex-1 bg-gradient-to-r from-[#FA6131] to-[#e04e1f] text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-[#FA6131]/20 flex justify-center items-center gap-2 hover:shadow-[#FA6131]/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={saving || !form.name.trim() || !form.price}
+              className="flex-1 py-2.5 bg-[#FA6131] hover:bg-[#e04e1f] text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {saving ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Check size={16} />
-                  Save Changes
-                </>
-              )}
+              {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />} Save Changes
             </button>
           </div>
         </form>
@@ -353,406 +370,243 @@ const EditItemModal = ({ item, onClose, onSuccess, showToast }) => {
   );
 };
 
-// ── Static money formatter (used outside component scope) ───────────
-const formatMoneyStatic = (amount) =>
-  new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(amount || 0);
-
-// ── Delete Confirmation Modal ───────────────────────────────────────
-const DeleteConfirmModal = ({ item, onClose, onConfirm, deleting }) => {
-  if (!item) return null;
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-sm bg-[#171B26] border border-red-500/20 rounded-3xl p-6 shadow-2xl shadow-red-500/5 z-10 animate-in zoom-in-95 duration-200">
-        <div className="flex flex-col items-center text-center">
-          {/* Warning Icon */}
-          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4">
-            <AlertTriangle size={24} className="text-red-400" />
-          </div>
-
-          <h3 className="text-lg font-extrabold text-white mb-2">Delete Item?</h3>
-          <p className="text-sm text-gray-400 mb-1">
-            This will permanently remove
-          </p>
-          <p className="text-sm font-bold text-white mb-1">"{item.name}"</p>
-          <p className="text-xs text-gray-500 mb-6">
-            at {formatMoneyStatic(item.price)} from your menu. This cannot be undone.
-          </p>
-
-          <div className="flex gap-3 w-full">
-            <button
-              onClick={onClose}
-              disabled={deleting}
-              className="flex-1 py-3 rounded-xl font-bold text-sm bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onConfirm(item)}
-              disabled={deleting}
-              className="flex-1 py-3 rounded-xl font-bold text-sm bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {deleting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Trash2 size={14} />
-              )}
-              {deleting ? 'Deleting...' : 'Delete'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Menu Item Card ──────────────────────────────────────────────────
-const MenuItemCard = ({ item, onEdit, onDelete, onToggle, updatingId }) => {
-  return (
-    <div
-      className={`group relative rounded-2xl border transition-all duration-200 ${
-        item.is_available
-          ? 'bg-white/[0.03] border-white/5 hover:border-white/10'
-          : 'bg-white/[0.01] border-white/[0.03]'
-      }`}
-    >
-      <div className="p-4 flex items-start gap-3">
-        {/* Item Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className={`text-sm md:text-base font-bold truncate ${
-              item.is_available ? 'text-white' : 'text-gray-500 line-through'
-            }`}>
-              {item.name}
-            </h4>
-            {!item.is_available && (
-              <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
-                Sold out
-              </span>
-            )}
-          </div>
-
-          <p className="text-[#FA6131] font-extrabold text-sm">
-            {formatMoneyStatic(item.price)}
-          </p>
-
-          {item.description && (
-            <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
-              {item.description}
-            </p>
-          )}
-
-          {/* Category badge */}
-          {item.category && (
-            <div className="mt-2">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 bg-white/5 border border-white/5 px-2 py-0.5 rounded-full">
-                {item.category}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-col items-end gap-2 shrink-0">
-          {/* Toggle */}
-          <button
-            onClick={() => onToggle(item)}
-            disabled={updatingId === item.id}
-            className={`relative w-14 h-7 rounded-full p-0.5 cursor-pointer transition-all duration-300 ${
-              item.is_available
-                ? 'bg-green-500/20 border border-green-500/40'
-                : 'bg-gray-800 border border-gray-700'
-            } ${updatingId === item.id ? 'opacity-50 cursor-wait' : ''}`}
-          >
-            <div className={`w-6 h-6 rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center ${
-              item.is_available
-                ? 'translate-x-7 bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]'
-                : 'translate-x-0 bg-gray-600'
-            }`}>
-              {updatingId === item.id ? (
-                <Loader2 size={12} className="animate-spin text-white" />
-              ) : item.is_available ? (
-                <Check size={12} className="text-white" strokeWidth={3} />
-              ) : (
-                <X size={12} className="text-white/40" strokeWidth={3} />
-              )}
-            </div>
-          </button>
-
-          {/* Edit & Delete buttons */}
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => onEdit(item)}
-              className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-center text-gray-500 hover:text-[#2CD6EB] hover:bg-[#2CD6EB]/10 hover:border-[#2CD6EB]/20 transition-all"
-              title="Edit item"
-            >
-              <Pencil size={13} />
-            </button>
-            <button
-              onClick={() => onDelete(item)}
-              className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
-              title="Delete item"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Main Menu Manager ───────────────────────────────────────────────
+// ── Main Menu Manager ────────────────────────────────────────────────
 const VendorMenuManager = () => {
-  const [menuItems, setMenuItems] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [updatingId, setUpdatingId] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [collapsedCategories, setCollapsedCategories] = useState({});
 
-  // Edit & Delete state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [updatingId, setUpdatingId] = useState(null);
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Toast state
   const [toast, setToast] = useState(null);
 
-  const showToast = useCallback((type, msg) => {
+  const showToast = (type, msg) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchMenu();
-  }, []);
-
-  const fetchMenu = async () => {
+  const fetchMenu = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const data = await vendorService.getMenu();
-      setMenuItems(Array.isArray(data) ? data : []);
+      let data;
+      try {
+        data = await vendorService.getMenuV2();
+      } catch {
+        data = await vendorService.getMenu();
+      }
+      setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load menu items.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleToggle = async (item) => {
-    if (updatingId) return;
+  useEffect(() => {
+    fetchMenu();
+  }, [fetchMenu]);
+
+  // Instant Stock Toggle
+  const handleToggleAvailability = async (item) => {
+    setUpdatingId(item.id);
+    const newStatus = !item.is_available;
     try {
-      setUpdatingId(item.id);
-      const newStatus = !item.is_available;
-
-      // Optimistic update
-      setMenuItems(prev => prev.map(m => m.id === item.id ? { ...m, is_available: newStatus } : m));
-
-      // API call
-      await vendorService.updateMenuItem(item.id, { is_available: newStatus });
-      showToast('success', newStatus ? `"${item.name}" is now available ✅` : `"${item.name}" marked as sold out`);
+      await vendorService.updateMenuV2Item(item.id, { is_available: newStatus });
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, is_available: newStatus } : i))
+      );
+      showToast('success', `${item.name} is now ${newStatus ? 'Available' : 'Sold Out'}`);
     } catch (err) {
-      // Revert on failure
-      setMenuItems(prev => prev.map(m => m.id === item.id ? { ...m, is_available: item.is_available } : m));
-      showToast('error', getApiErrorMessage(err, 'Failed to update item status.'));
+      showToast('error', getApiErrorMessage(err, 'Failed to update stock status.'));
     } finally {
       setUpdatingId(null);
     }
   };
 
-  const handleDelete = async (item) => {
-    setDeleteLoading(true);
+  const handleDeleteItem = async (item) => {
     try {
-      // Optimistic removal
-      setMenuItems(prev => prev.filter(m => m.id !== item.id));
-      setDeletingItem(null);
-
       await vendorService.deleteMenuItem(item.id);
-      showToast('success', `"${item.name}" removed from menu 🗑️`);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      setDeletingItem(null);
+      showToast('success', `"${item.name}" removed from menu.`);
     } catch (err) {
-      // Revert on failure — re-fetch to get accurate state
-      showToast('error', getApiErrorMessage(err, 'Failed to delete item.'));
-      fetchMenu();
-    } finally {
-      setDeleteLoading(false);
+      showToast('error', getApiErrorMessage(err, 'Failed to delete menu item.'));
     }
   };
 
-  const toggleCategory = (cat) => {
-    setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
-  };
+  const categories = Array.from(new Set(items.map((i) => i.category).filter(Boolean)));
 
-  const filteredMenu = menuItems.filter(item =>
-    item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.category?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = items.filter((item) => {
+    if (selectedCategory !== 'ALL' && item.category !== selectedCategory) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      return String(item.name || '').toLowerCase().includes(q) || String(item.category || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
 
-  // Group by category
-  const groupedMenu = filteredMenu.reduce((acc, item) => {
-    const cat = item.category || 'Uncategorized';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(item);
-    return acc;
-  }, {});
-
-  const availableCount = menuItems.filter(i => i.is_available).length;
-  const soldOutCount = menuItems.filter(i => !i.is_available).length;
-
-  if (loading && menuItems.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 size={32} className="animate-spin text-[#FA6131]" />
-          <p className="text-sm text-gray-500 font-medium">Loading menu...</p>
-        </div>
-      </div>
-    );
-  }
+  const formatMoney = (amount) =>
+    new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(amount || 0);
 
   return (
-    <div className="p-4 md:p-8 flex flex-col h-full bg-[#0f1118] max-w-4xl mx-auto pb-24">
-      {/* Toast */}
+    <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto pb-24 relative">
       <Toast toast={toast} />
 
-      {/* Header section */}
-      <div className="mb-6 shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Menu Manager</h2>
-            <p className="text-sm text-gray-500 mt-1">Add, edit, and manage your listings.</p>
-          </div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">Menu & Inventory V2</h2>
+          <p className="text-xs text-gray-500 mt-1">Manage prices, instant stock availability, and compulsory cart items.</p>
+        </div>
+
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#FA6131] hover:bg-[#e04e1f] px-4 py-2.5 text-xs font-bold text-white transition-all shadow-lg shadow-[#FA6131]/20 self-start"
+        >
+          <Plus size={16} /> Add Menu Item
+        </button>
+      </div>
+
+      {/* Search & Categories */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search menu items..."
+            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FA6131]/40"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#FA6131] to-[#e04e1f] hover:from-[#ff7040] hover:to-[#FA6131] text-white px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-[#FA6131]/20 hover:shadow-[#FA6131]/40 hover:scale-[1.02] active:scale-[0.98] self-start"
+            onClick={() => setSelectedCategory('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+              selectedCategory === 'ALL'
+                ? 'bg-[#FA6131]/10 border-[#FA6131]/30 text-[#FA6131]'
+                : 'bg-white/[0.02] border-white/5 text-gray-400'
+            }`}
           >
-            <Plus size={18} />
-            Add Item
+            All Items ({items.length})
           </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                selectedCategory === cat
+                  ? 'bg-[#FA6131]/10 border-[#FA6131]/30 text-[#FA6131]'
+                  : 'bg-white/[0.02] border-white/5 text-gray-400'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
-
-        {/* Stats bar */}
-        {menuItems.length > 0 && (
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
-              {menuItems.length} items
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 bg-green-500/10 px-3 py-1.5 rounded-full border border-green-500/10">
-              {availableCount} available
-            </span>
-            {soldOutCount > 0 && (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/10">
-                {soldOutCount} sold out
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6 shrink-0 relative">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
-          <Search size={18} />
+      {/* Menu List */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <Loader2 size={32} className="animate-spin text-[#FA6131]" />
+          <p className="text-sm text-gray-500 font-medium">Loading store menu…</p>
         </div>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-white/[0.03] border border-white/5 rounded-xl pl-12 pr-4 py-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#2CD6EB] focus:ring-1 focus:ring-[#2CD6EB]/50 transition-all"
-          placeholder="Search your menu..."
-        />
-      </div>
-
-      {error ? (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-center">
-          <p>{error}</p>
-          <button onClick={fetchMenu} className="mt-4 px-6 py-2 bg-red-500/20 rounded-xl text-sm font-bold hover:bg-red-500/30 transition-colors">Retry</button>
+      ) : error ? (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl p-6 text-center">
+          <p className="font-medium">{error}</p>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="text-center py-16 bg-white/[0.02] border border-white/5 rounded-3xl space-y-2">
+          <UtensilsCrossed size={28} className="mx-auto text-gray-600" />
+          <p className="text-sm font-bold text-gray-400">No items match your criteria.</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-6 pr-1">
-          {Object.keys(groupedMenu).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center bg-white/[0.02] border border-white/5 rounded-2xl">
-              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                <UtensilsCrossed size={28} className="text-gray-600" />
+        <div className="space-y-3">
+          {filteredItems.map((item) => (
+            <div
+              key={item.id}
+              className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                item.is_available
+                  ? 'bg-white/[0.03] border-white/5'
+                  : 'bg-white/[0.01] border-white/[0.03] opacity-60'
+              }`}
+            >
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-white truncate">{item.name}</h4>
+                  {item.is_compulsory && (
+                    <span className="text-[9px] font-extrabold text-[#2CD6EB] bg-[#2CD6EB]/10 border border-[#2CD6EB]/20 px-2 py-0.5 rounded-full uppercase">
+                      Compulsory
+                    </span>
+                  )}
+                  {!item.is_available && (
+                    <span className="text-[9px] font-extrabold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full uppercase">
+                      Sold out
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-[#FA6131] font-extrabold text-sm">{formatMoney(item.price)}</p>
+
+                <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                  {item.category && <span>Cat: {item.category}</span>}
+                  {item.stock_qty != null && <span>Stock: {item.stock_qty} available</span>}
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">No menu items found</h3>
-              <p className="text-gray-500 max-w-sm text-sm mb-6">
-                {searchQuery ? "No items match your search." : "Your menu is empty. Add some items to get started!"}
-              </p>
-              {!searchQuery && (
+
+              {/* Instant Stock Toggle & Action Controls */}
+              <div className="flex items-center gap-2 shrink-0">
                 <button
-                  onClick={() => setShowAddModal(true)}
-                  className="flex items-center gap-2 bg-[#FA6131] text-white px-5 py-2.5 rounded-xl font-bold text-sm"
+                  onClick={() => handleToggleAvailability(item)}
+                  disabled={updatingId === item.id}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                    item.is_available
+                      ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                      : 'bg-red-500/10 border-red-500/30 text-red-400'
+                  }`}
                 >
-                  <Plus size={16} /> Add First Item
-                </button>
-              )}
-            </div>
-          ) : (
-            Object.entries(groupedMenu).map(([category, items]) => (
-              <div key={category}>
-                {/* Category Header */}
-                <button
-                  onClick={() => toggleCategory(category)}
-                  className="flex items-center justify-between w-full px-1 mb-3 group"
-                >
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-bold text-[#2CD6EB] uppercase tracking-[0.15em]">{category}</h3>
-                    <span className="text-[10px] font-bold text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">{items.length}</span>
-                  </div>
-                  {collapsedCategories[category]
-                    ? <ChevronDown size={14} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-                    : <ChevronUp size={14} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-                  }
+                  {updatingId === item.id ? <Loader2 size={12} className="animate-spin" /> : item.is_available ? 'Available' : 'Sold Out'}
                 </button>
 
-                {/* Items */}
-                {!collapsedCategories[category] && (
-                  <div className="space-y-2">
-                    {items.map((item) => (
-                      <MenuItemCard
-                        key={item.id}
-                        item={item}
-                        onEdit={setEditingItem}
-                        onDelete={setDeletingItem}
-                        onToggle={handleToggle}
-                        updatingId={updatingId}
-                      />
-                    ))}
-                  </div>
-                )}
+                <button
+                  onClick={() => setEditingItem(item)}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+                  title="Edit item"
+                >
+                  <Pencil size={14} />
+                </button>
+
+                <button
+                  onClick={() => setDeletingItem(item)}
+                  className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all"
+                  title="Delete item"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
-            ))
-          )}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* ── Mobile FAB ────────────────────────── */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="sm:hidden fixed bottom-20 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-[#FA6131] to-[#e04e1f] flex items-center justify-center shadow-xl shadow-[#FA6131]/30 hover:shadow-[#FA6131]/50 hover:scale-110 active:scale-95 transition-all z-40"
-        aria-label="Add menu item"
-      >
-        <Plus size={24} className="text-white" />
-      </button>
-
-      {/* ── Add Item Modal ────────────────────── */}
+      {/* Add Modal */}
       <AddItemModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
         onSuccess={fetchMenu}
         showToast={showToast}
       />
 
-      {/* ── Edit Item Modal ────────────────────── */}
+      {/* Edit Modal */}
       {editingItem && (
         <EditItemModal
           item={editingItem}
@@ -762,14 +616,31 @@ const VendorMenuManager = () => {
         />
       )}
 
-      {/* ── Delete Confirmation Modal ────────────── */}
+      {/* Delete Modal */}
       {deletingItem && (
-        <DeleteConfirmModal
-          item={deletingItem}
-          onClose={() => setDeletingItem(null)}
-          onConfirm={handleDelete}
-          deleting={deleteLoading}
-        />
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setDeletingItem(null)} />
+          <div className="relative w-full max-w-sm bg-[#171B26] border border-red-500/20 rounded-3xl p-6 shadow-2xl z-10 space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+              <AlertTriangle size={24} />
+            </div>
+            <div className="text-center">
+              <h3 className="text-base font-extrabold text-white">Delete "{deletingItem.name}"?</h3>
+              <p className="text-xs text-gray-400 mt-1">This will permanently delete this item from your store menu.</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setDeletingItem(null)} className="flex-1 py-2.5 rounded-xl bg-white/5 text-xs font-bold text-gray-400">
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteItem(deletingItem)}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

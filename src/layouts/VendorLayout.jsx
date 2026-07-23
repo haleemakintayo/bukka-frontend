@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, Navigate } from 'react-router-dom';
-import { Home, LayoutList, LogOut } from 'lucide-react';
+import { Home, LayoutList, LogOut, Flame, Wallet } from 'lucide-react';
 import { useVendorAuth } from '../context/VendorAuthContext';
 
 const VendorLayout = () => {
@@ -41,36 +41,74 @@ const VendorLayout = () => {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-[#171B26] border-t border-white/5 flex items-stretch z-50 shadow-[0_-4px_30px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        {/* Dashboard */}
         <NavLink
           to="/vendor/dashboard"
           className={({ isActive }) => 
-            `flex flex-col items-center gap-1 flex-1 py-3 transition-all duration-200 relative ${
-              isActive ? 'text-[#2CD6EB]' : 'text-gray-600 hover:text-gray-400'
+            `flex flex-col items-center gap-1 flex-1 py-2.5 transition-all duration-200 relative ${
+              isActive ? 'text-[#2CD6EB]' : 'text-gray-500 hover:text-gray-300'
             }`
           }
         >
           {({ isActive }) => (
             <>
-              {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#2CD6EB] rounded-full" />}
-              <Home size={22} />
-              <span className="text-[10px] font-bold tracking-wider uppercase">Dashboard</span>
+              {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-[#2CD6EB] rounded-full" />}
+              <Home size={20} />
+              <span className="text-[9px] font-bold tracking-wider uppercase">Home</span>
+            </>
+          )}
+        </NavLink>
+
+        {/* Orders Queue */}
+        <NavLink
+          to="/vendor/orders"
+          className={({ isActive }) => 
+            `flex flex-col items-center gap-1 flex-1 py-2.5 transition-all duration-200 relative ${
+              isActive ? 'text-[#FA6131]' : 'text-gray-500 hover:text-gray-300'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-[#FA6131] rounded-full" />}
+              <Flame size={20} />
+              <span className="text-[9px] font-bold tracking-wider uppercase">Orders</span>
             </>
           )}
         </NavLink>
         
+        {/* Menu */}
         <NavLink
           to="/vendor/menu"
           className={({ isActive }) => 
-            `flex flex-col items-center gap-1 flex-1 py-3 transition-all duration-200 relative ${
-              isActive ? 'text-[#FA6131]' : 'text-gray-600 hover:text-gray-400'
+            `flex flex-col items-center gap-1 flex-1 py-2.5 transition-all duration-200 relative ${
+              isActive ? 'text-emerald-400' : 'text-gray-500 hover:text-gray-300'
             }`
           }
         >
           {({ isActive }) => (
             <>
-              {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#FA6131] rounded-full" />}
-              <LayoutList size={22} />
-              <span className="text-[10px] font-bold tracking-wider uppercase">Menu</span>
+              {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-emerald-400 rounded-full" />}
+              <LayoutList size={20} />
+              <span className="text-[9px] font-bold tracking-wider uppercase">Menu</span>
+            </>
+          )}
+        </NavLink>
+
+        {/* Earnings */}
+        <NavLink
+          to="/vendor/earnings"
+          className={({ isActive }) => 
+            `flex flex-col items-center gap-1 flex-1 py-2.5 transition-all duration-200 relative ${
+              isActive ? 'text-amber-400' : 'text-gray-500 hover:text-gray-300'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-amber-400 rounded-full" />}
+              <Wallet size={20} />
+              <span className="text-[9px] font-bold tracking-wider uppercase">Earnings</span>
             </>
           )}
         </NavLink>
