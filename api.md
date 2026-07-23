@@ -8,7 +8,7 @@ It intentionally separates:
 - the live production behavior verified against `https://bukka-ai-backend-523632194f78.herokuapp.com`
 - the known gaps that still need backend fixes
 
-Last verified against production: `2026-07-07`
+Last verified against production: `2026-07-23`
 
 > **See also:** `VENDOR_JOURNEY.md` for the vendor-facing bot experience and order lifecycle guide.
 
@@ -83,6 +83,8 @@ Code-level API additions from `2026-07-04` are documented below.
 - `GET /api/v1/vendors/me/analytics`
 - `GET /api/v1/vendors/me/orders`
 - `GET /api/v1/vendors/me/orders/{order_id}`
+- `POST /api/v1/vendors/me/orders/{order_id}/ready` *(added 2026-07-23)*
+- `POST /api/v1/vendors/me/orders/{order_id}/reject` *(added 2026-07-23)*
 - `GET /api/v1/vendors/me/menu`
 - `POST /api/v1/vendors/me/menu`
 - `PATCH /api/v1/vendors/me/menu/{item_id}`
@@ -93,9 +95,15 @@ Code-level API additions from `2026-07-04` are documented below.
 - `PATCH /api/v1/vendors/me/menu-v2/{item_id}`
 - `DELETE /api/v1/vendors/me/menu-v2/{item_id}`
 
+**Vendor Availability** *(added 2026-07-08)*
+- `GET /api/v1/vendors/me/availability`
+- `POST /api/v1/vendors/me/availability/open`
+- `POST /api/v1/vendors/me/availability/close`
+- `POST /api/v1/vendors/me/availability/pause`
+
 **Vendor Bot Commands** *(implemented in Telegram/WhatsApp chat, not REST)*
 - `/pending` — list today’s paid unconfirmed orders *(added 2026-07-07)*
-- `/confirm <id>` — approve a paid order + deduct stock + notify customer
+- `/reject <id>` — reject a paid/pending order + reverse stock deduction + notify customer *(updated 2026-07-23 to opt-out fulfillment model)*
 - `/add`, `/out`, `/in`, `/stock *`, `/menu`, `/setpin`, `/link`, `/help`
 
 **Webhooks & Misc**
@@ -853,6 +861,28 @@ Success response:
 }
 ```
 
+### `POST /api/v1/vendors/me/orders/{order_id}/ready`
+
+*(Added 2026-07-23)* Marks a vendor order as **Ready** (for pickup or dispatch) and notifies the customer via WhatsApp/Telegram.
+
+Security:
+- Requires vendor auth
+- Returns `404` if the order does not exist or belongs to another vendor
+- Returns `400` if the order status is not in `["Paid", "Confirmed"]`
+
+Success response: Updated `OrderResponse` object with `status: "Ready"`.
+
+### `POST /api/v1/vendors/me/orders/{order_id}/reject`
+
+*(Added 2026-07-23)* Rejects a vendor order, reverses stock deduction (`reverse_sale_stock_deduction`), sets `status: "Rejected"`, and notifies the customer.
+
+Security:
+- Requires vendor auth
+- Returns `404` if the order does not exist or belongs to another vendor
+- Returns `400` if the order is already in `["Rejected", "Refunded", "Cancelled"]`
+
+Success response: Updated `OrderResponse` object with `status: "Rejected"`.
+
 ### `GET /api/v1/vendors/me/menu`
 
 Returns the vendor's menu items for management.
@@ -877,13 +907,16 @@ Success response (201 Created): The created `MenuItemPublic` object.
 
 ### `PATCH /api/v1/vendors/me/menu/{item_id}`
 
-Updates a menu item's price and availability (e.g., to mark as "Sold Out").
+Updates a menu item's details (name, price, category, description, availability, etc.).
 
 Request body (all fields optional):
 
 ```json
 {
+  "name": "Spicy Suya",
   "price": 2500,
+  "category": "Meat",
+  "description": "Extra spicy beef suya",
   "is_available": false
 }
 ```
@@ -1207,20 +1240,18 @@ Example response:
 
 If no pending orders exist: `"📋 No pending orders right now. All paid orders have been confirmed. ✅"`
 
-### `/confirm <order_id>`
+### `/reject <order_id>` *(updated — 2026-07-23)*
 
-Approves a paid order.
+Rejects a paid or pending order in the **opt-out fulfillment model** (where payment clearing automatically accepts orders and deducts inventory by default).
 
-1. Sets `Order.status = "Confirmed"`
-2. Deducts stock via `apply_sale_stock_deduction()`
-3. Sends customer: *"Order #47 confirmed. We are packing it now."*
-4. Returns low-stock alerts to vendor if triggered
+1. Reverses stock deduction via `reverse_sale_stock_deduction()`
+2. Sets `Order.status = "Rejected"`
+3. Sends customer: *"❌ Your order #47 was rejected by the vendor. You will receive a refund shortly."*
+4. Returns confirmation note and restored stock items to the vendor
 
-Also accepts customer name (`/confirm Chidi`). If multiple users match the name, the bot requests an order ID.
+### Enriched Payment Alert *(updated — 2026-07-23)*
 
-### Enriched Payment Alert *(updated — 2026-07-07)*
-
-When Paystack fires `charge.success`, the vendor receives a full itemised receipt instead of the old generic message. Built by `_build_vendor_order_alert()` in `webhooks.py`.
+When Paystack fires `charge.success`, the vendor receives a full itemised receipt and stock is automatically deducted upon payment clearance. Built by `_build_vendor_order_alert()` in `webhooks.py`.
 
 **Pickup alert format:**
 ```
@@ -1236,7 +1267,7 @@ When Paystack fires `charge.success`, the vendor receives a full itemised receip
 Total paid: ₦1,200
 Ref: `PSK_ref_abc123`
 
-✔️ Reply /confirm 47 when the order is ready.
+Reply /reject 47 if you cannot fulfill this order.
 ```
 
 **Delivery alert additions:**
@@ -1264,6 +1295,110 @@ See `VENDOR_JOURNEY.md` → *Full Command Reference* for the complete command ta
 4. Vendor sends `/link <code>` to the bot → receives PIN reminder + full command list
 5. Vendor sets PIN via `/setpin <pin>` → can now log into the web dashboard
 6. Vendor is live
+
+---
+
+## Vendor Availability
+
+> Added: `2026-07-08`  
+> Auth: `Authorization: Bearer <vendor_jwt>` (from `POST /api/v1/auth/vendor/login`)
+
+All four endpoints read/write the `is_open` and `pause_until` columns on the `vendors` table.
+They are the REST equivalents of the bot commands `/open`, `/close`, and `/pause`.
+
+---
+
+### `GET /api/v1/vendors/me/availability`
+
+Returns the vendor's current store availability state.
+
+**Auth:** Vendor JWT  
+**Response:**
+
+```json
+{
+  "is_open": true,
+  "pause_until": "2026-07-08T11:30:00+00:00",
+  "pause_remaining_seconds": 1543,
+  "status_label": "paused (25m 43s remaining)"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `is_open` | bool | True when the store is administratively open |
+| `pause_until` | string \| null | ISO-8601 UTC timestamp at which the pause expires; null if not paused |
+| `pause_remaining_seconds` | int \| null | Seconds remaining in the pause; null if not paused |
+| `status_label` | string | Human-readable label: `"open"`, `"closed"`, or `"paused (Xm Ys remaining)"` |
+
+---
+
+### `POST /api/v1/vendors/me/availability/open`
+
+Opens the store and clears any active pause.
+
+**Auth:** Vendor JWT  
+**Body:** None  
+**Response:** Same shape as `GET /availability` with `status_label: "open"`
+
+**Effect:** Sets `vendors.is_open = true` and `vendors.pause_until = null`.
+
+---
+
+### `POST /api/v1/vendors/me/availability/close`
+
+Closes the store. Guards against in-flight orders.
+
+**Auth:** Vendor JWT  
+**Body:** None  
+**Query params:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `force` | bool | `false` | Skip the in-flight order check and close immediately |
+
+**Success response (200):** Same shape as `GET /availability` with `status_label: "closed"`
+
+**Conflict response (409)** — returned when `force=false` and in-flight orders exist:
+
+```json
+{
+  "detail": {
+    "message": "There are 2 in-flight order(s) that have not been dispatched yet. Pass ?force=true to close anyway, or resolve the orders first.",
+    "in_flight_order_ids": [105, 107]
+  }
+}
+```
+
+**In-flight statuses checked:** `Paid`, `Confirmed`, `Ready`
+
+**Dashboard usage:** Show the 409 response as a modal dialog. Display the order IDs with a "Force Close" button that re-calls with `?force=true`.
+
+---
+
+### `POST /api/v1/vendors/me/availability/pause`
+
+Temporarily pauses the store for a fixed number of minutes without fully closing it.
+New customers who scan the QR code during a pause get a "short break" message and cannot place orders until the pause expires.
+
+**Auth:** Vendor JWT  
+**Body:**
+
+```json
+{
+  "minutes": 30
+}
+```
+
+| Field | Validation | Description |
+|---|---|---|
+| `minutes` | integer, 5–480 | How long to pause (min 5 minutes, max 8 hours) |
+
+**Success response (200):** Same shape as `GET /availability` with `status_label: "paused (30m 0s remaining)"`
+
+**Validation error (422):** Returned if `minutes < 5` or `minutes > 480`.
+
+**Note:** The store `is_open` flag remains `true` during a pause — the pause is implemented via `pause_until` only. The bot and QR-scan interception logic check both fields.
 
 ---
 

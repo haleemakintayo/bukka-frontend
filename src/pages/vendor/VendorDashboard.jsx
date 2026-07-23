@@ -5,6 +5,7 @@ import { getApiErrorMessage } from '../../services/api';
 import {
   Loader2, TrendingUp, ShoppingBag, Clock, LayoutList,
   Wallet, Package, Power, PauseCircle, CheckCircle2, XCircle, AlertTriangle,
+  X, MapPin, Phone, CreditCard, FileText, ChevronRight, Eye, Truck, Store,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -279,6 +280,220 @@ const StoreStatusWidget = () => {
 };
 
 // ─────────────────────────────────────────────
+// Order Detail Modal
+// ─────────────────────────────────────────────
+const OrderDetailModal = ({ orderId, onClose, formatMoney, fmtTime }) => {
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!orderId) return;
+    const fetchDetail = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await vendorService.getOrderDetail(orderId);
+        setOrder(data);
+      } catch (err) {
+        setError(getApiErrorMessage(err, 'Failed to load order details.'));
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
+  }, [orderId]);
+
+  if (!orderId) return null;
+
+  const fmtDate = (isoString) => {
+    if (!isoString) return '';
+    return new Date(isoString).toLocaleDateString('en-NG', {
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    });
+  };
+
+  const getStatusColor = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'paid' || s === 'confirmed' || s === 'delivered' || s === 'completed') return 'text-green-400 bg-green-500/10 border-green-500/20';
+    if (s === 'ready') return 'text-[#2CD6EB] bg-[#2CD6EB]/10 border-[#2CD6EB]/20';
+    if (s === 'cancelled' || s === 'failed') return 'text-red-400 bg-red-500/10 border-red-500/20';
+    return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+  };
+
+  const getPaymentColor = (status) => {
+    if (status === 'PAID') return 'text-green-400 bg-green-500/10 border-green-500/20';
+    if (status === 'FAILED') return 'text-red-400 bg-red-500/10 border-red-500/20';
+    return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative w-full sm:max-w-lg bg-[#171B26] border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col">
+        {/* Drag handle (mobile) */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-white/20" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#2CD6EB]/10 flex items-center justify-center">
+              <Eye size={16} className="text-[#2CD6EB]" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-white">Order Details</h3>
+              <p className="text-[10px] font-bold text-[#2CD6EB] tracking-wider">#{String(orderId).toUpperCase()}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Loader2 size={28} className="animate-spin text-[#FA6131]" />
+              <p className="text-sm text-gray-500 font-medium">Loading order details…</p>
+            </div>
+          ) : error ? (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl p-5 text-center">
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+          ) : order ? (
+            <>
+              {/* ── Customer & Status ────────── */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Customer</p>
+                  <h4 className="text-lg font-extrabold text-white">{order.customer_name || 'Customer'}</h4>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                    <Clock size={11} />
+                    <span>{fmtDate(order.created_at)} • {fmtTime(order.created_at)}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1.5">
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${getStatusColor(order.status)}`}>
+                    {order.status || 'Received'}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${getPaymentColor(order.payment_status)}`}>
+                    {order.payment_status || 'PENDING'}
+                  </span>
+                </div>
+              </div>
+
+              {/* ── Order Type Badge ────────── */}
+              <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold ${
+                  order.order_type === 'delivery'
+                    ? 'bg-[#FA6131]/10 border-[#FA6131]/20 text-[#FA6131]'
+                    : 'bg-[#2CD6EB]/10 border-[#2CD6EB]/20 text-[#2CD6EB]'
+                }`}>
+                  {order.order_type === 'delivery' ? <Truck size={14} /> : <Store size={14} />}
+                  {order.order_type === 'delivery' ? 'Delivery' : 'Pickup'}
+                </div>
+              </div>
+
+              {/* ── Items Breakdown ────────── */}
+              <div className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-white/5">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Items Ordered</p>
+                </div>
+                <div className="divide-y divide-white/5">
+                  {order.items && order.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between px-4 py-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <span className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">
+                          {item.quantity}×
+                        </span>
+                        <span className="text-sm text-white font-medium truncate">{item.menu_item_name}</span>
+                      </div>
+                      <div className="text-right shrink-0 ml-3">
+                        <p className="text-sm font-bold text-white">{formatMoney(item.line_total || (item.quantity * item.unit_price))}</p>
+                        <p className="text-[10px] text-gray-600">@ {formatMoney(item.unit_price)} ea.</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Total */}
+                <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02] border-t border-white/5">
+                  <span className="text-sm font-bold text-gray-400">Total</span>
+                  <span className="text-lg font-extrabold text-white">{formatMoney(order.total_amount)}</span>
+                </div>
+              </div>
+
+              {/* ── Delivery Info ────────── */}
+              {order.order_type === 'delivery' && order.delivery_address && (
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-3">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Delivery Details</p>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#FA6131]/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <MapPin size={14} className="text-[#FA6131]" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-white font-medium">{order.delivery_address}</p>
+                      {(order.delivery_note || order.notes) && (
+                        <p className="text-xs text-gray-500 mt-1 italic">
+                          "{order.delivery_note || order.notes}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Customer Contact ────────── */}
+              {order.customer_phone && (
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                      <Phone size={14} className="text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Customer Phone</p>
+                      <a
+                        href={`tel:${order.customer_phone}`}
+                        className="text-sm text-[#2CD6EB] font-bold hover:underline"
+                      >
+                        {order.customer_phone}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Payment Reference ────────── */}
+              {order.payment_reference && (
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                      <CreditCard size={14} className="text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Payment Reference</p>
+                      <p className="text-xs text-gray-300 font-mono truncate">{order.payment_reference}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
 // Main Dashboard
 // ─────────────────────────────────────────────
 const VendorDashboard = () => {
@@ -287,6 +502,7 @@ const VendorDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -436,7 +652,8 @@ const VendorDashboard = () => {
             {orders.map((order) => (
               <div
                 key={order.id || order.order_id}
-                className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-all"
+                onClick={() => setSelectedOrderId(order.order_id || order.id)}
+                className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-all cursor-pointer active:scale-[0.98] group/card"
               >
                 {/* Order header */}
                 <div className="flex justify-between items-start border-b border-white/5 pb-3 mb-3">
@@ -446,14 +663,17 @@ const VendorDashboard = () => {
                     </p>
                     <h4 className="text-white font-bold text-sm">{order.customer_name || 'Customer'}</h4>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-base md:text-lg font-extrabold text-white">
-                      {formatMoney(order.total_amount || order.total_price)}
-                    </span>
-                    <div className="flex items-center gap-1 text-[10px] text-gray-600 mt-0.5">
-                      <Clock size={10} />
-                      {fmtTime(order.created_at)}
+                  <div className="flex items-center gap-2">
+                    <div className="flex flex-col items-end">
+                      <span className="text-base md:text-lg font-extrabold text-white">
+                        {formatMoney(order.total_amount || order.total_price)}
+                      </span>
+                      <div className="flex items-center gap-1 text-[10px] text-gray-600 mt-0.5">
+                        <Clock size={10} />
+                        {fmtTime(order.created_at)}
+                      </div>
                     </div>
+                    <ChevronRight size={16} className="text-gray-600 group-hover/card:text-gray-400 transition-colors shrink-0" />
                   </div>
                 </div>
 
@@ -489,6 +709,16 @@ const VendorDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* ── Order Detail Modal ────────────────── */}
+      {selectedOrderId && (
+        <OrderDetailModal
+          orderId={selectedOrderId}
+          onClose={() => setSelectedOrderId(null)}
+          formatMoney={formatMoney}
+          fmtTime={fmtTime}
+        />
+      )}
     </div>
   );
 };

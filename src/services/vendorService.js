@@ -17,20 +17,32 @@ export const vendorService = {
     return response.data;
   },
 
+  /** GET /vendors/me/orders/{orderId} — full detail for a single order */
+  getOrderDetail: async (orderId) => {
+    const response = await apiClient.get(`/vendors/me/orders/${orderId}`);
+    return response.data;
+  },
+
   getMenu: async () => {
     const response = await apiClient.get('/vendors/me/menu');
     return response.data;
   },
 
+  /** PATCH /vendors/me/menu/{itemId} — update name, price, category, description, is_available */
   updateMenuItem: async (itemId, data) => {
     const response = await apiClient.patch(`/vendors/me/menu/${itemId}`, data);
     return response.data;
   },
 
-  /** POST /vendors/me/menu — add a new menu item (if backend supports vendor self-service) */
+  /** POST /vendors/me/menu — add a new menu item */
   addMenuItem: async (data) => {
     const response = await apiClient.post('/vendors/me/menu', data);
     return response.data;
+  },
+
+  /** DELETE /vendors/me/menu-v2/{itemId} — permanently remove a menu item (V2 only) */
+  deleteMenuItem: async (itemId) => {
+    await apiClient.delete(`/vendors/me/menu-v2/${itemId}`);
   },
 
   /** GET /vendors/me/analytics — vendor analytics */
