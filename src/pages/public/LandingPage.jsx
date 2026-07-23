@@ -123,16 +123,16 @@ const ScreenshotCarousel = ({ screenshots }) => {
 
   return (
     <div
-      className="flex flex-col items-center justify-center max-w-md mx-auto w-full group/carousel"
+      className="flex flex-col items-center justify-center max-w-xs sm:max-w-sm mx-auto w-full group/carousel"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative w-full flex justify-center items-center py-4">
-        {/* Soft circular aura glow that diffuses naturally without hard box clipping */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-tr from-bukka-green/15 via-bukka-orange/15 to-bukka-green/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative w-full flex justify-center items-center py-2">
+        {/* Soft circular aura glow tuned to the compact screenshot size */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-tr from-bukka-green/15 via-bukka-orange/15 to-bukka-green/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Carousel slide container with soft shadow */}
-        <div className="relative w-full max-w-[360px] overflow-hidden rounded-[2.5rem] shadow-2xl">
+        {/* Proportional screenshot container */}
+        <div className="relative w-full max-w-[280px] sm:max-w-[300px] overflow-hidden rounded-[2.2rem] shadow-2xl">
           <div
             className="flex transition-transform duration-500 ease-out"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -142,7 +142,7 @@ const ScreenshotCarousel = ({ screenshots }) => {
                 <img
                   src={img}
                   alt={`Bukka AI App Preview ${idx + 1}`}
-                  className="w-full h-auto object-contain rounded-[2.5rem]"
+                  className="w-full h-auto object-contain rounded-[2.2rem]"
                 />
               </div>
             ))}
@@ -153,17 +153,17 @@ const ScreenshotCarousel = ({ screenshots }) => {
             type="button"
             onClick={handlePrev}
             aria-label="Previous screenshot"
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 shadow-lg"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 shadow-lg"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={18} />
           </button>
           <button
             type="button"
             onClick={handleNext}
             aria-label="Next screenshot"
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 shadow-lg"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 shadow-lg"
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={18} />
           </button>
         </div>
       </div>
