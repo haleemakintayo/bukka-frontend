@@ -6,6 +6,7 @@ import {
   Loader2, TrendingUp, ShoppingBag, Clock, LayoutList,
   Wallet, Package, Power, PauseCircle, CheckCircle2, XCircle, AlertTriangle,
   X, MapPin, Phone, CreditCard, FileText, ChevronRight, Eye, Truck, Store,
+  Search, Ban, RefreshCw, Filter, Check
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -280,29 +281,79 @@ const StoreStatusWidget = () => {
 };
 
 // ─────────────────────────────────────────────
+// Rejection Confirmation Modal
+// ─────────────────────────────────────────────
+const RejectionConfirmModal = ({ order, onClose, onConfirm, loading }) => {
+  if (!order) return null;
+  const orderId = order.order_id || order.id;
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[#171B26] border border-red-500/20 rounded-3xl p-6 shadow-2xl z-10 animate-in zoom-in-95 duration-200 space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+          <Ban size={24} />
+        </div>
+        <div className="text-center">
+          <h3 className="text-lg font-extrabold text-white">Reject Order #{String(orderId).toUpperCase()}?</h3>
+          <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+            Are you sure you want to reject this order for <span className="text-white font-semibold">{order.customer_name || 'Customer'}</span>?
+            This will reverse stock deductions and automatically notify the customer.
+          </p>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(orderId)}
+            disabled={loading}
+            className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : 'Confirm Rejection'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
 // Order Detail Modal
 // ─────────────────────────────────────────────
-const OrderDetailModal = ({ orderId, onClose, formatMoney, fmtTime }) => {
+const OrderDetailModal = ({
+  orderId,
+  onClose,
+  formatMoney,
+  fmtTime,
+  onMarkReady,
+  onOpenRejectModal,
+  actionLoadingId,
+}) => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const fetchDetail = useCallback(async () => {
     if (!orderId) return;
-    const fetchDetail = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await vendorService.getOrderDetail(orderId);
-        setOrder(data);
-      } catch (err) {
-        setError(getApiErrorMessage(err, 'Failed to load order details.'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDetail();
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await vendorService.getOrderDetail(orderId);
+      setOrder(data);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load order details.'));
+    } finally {
+      setLoading(false);
+    }
   }, [orderId]);
+
+  useEffect(() => {
+    fetchDetail();
+  }, [fetchDetail]);
 
   if (!orderId) return null;
 
@@ -317,7 +368,7 @@ const OrderDetailModal = ({ orderId, onClose, formatMoney, fmtTime }) => {
     const s = (status || '').toLowerCase();
     if (s === 'paid' || s === 'confirmed' || s === 'delivered' || s === 'completed') return 'text-green-400 bg-green-500/10 border-green-500/20';
     if (s === 'ready') return 'text-[#2CD6EB] bg-[#2CD6EB]/10 border-[#2CD6EB]/20';
-    if (s === 'cancelled' || s === 'failed') return 'text-red-400 bg-red-500/10 border-red-500/20';
+    if (s === 'rejected' || s === 'cancelled' || s === 'failed') return 'text-red-400 bg-red-500/10 border-red-500/20';
     return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
   };
 
@@ -326,6 +377,11 @@ const OrderDetailModal = ({ orderId, onClose, formatMoney, fmtTime }) => {
     if (status === 'FAILED') return 'text-red-400 bg-red-500/10 border-red-500/20';
     return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
   };
+
+  const currentStatus = (order?.status || '').toLowerCase();
+  const isReadyActionable = ['paid', 'confirmed'].includes(currentStatus);
+  const isRejectActionable = !['rejected', 'refunded', 'cancelled', 'completed', 'delivered'].includes(currentStatus);
+  const isActionExecuting = actionLoadingId === orderId;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
@@ -485,6 +541,49 @@ const OrderDetailModal = ({ orderId, onClose, formatMoney, fmtTime }) => {
                   </div>
                 </div>
               )}
+
+              {/* ── Vendor Action Controls ────────── */}
+              <div className="pt-2 border-t border-white/5 space-y-3">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Order Actions</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {isReadyActionable && (
+                    <button
+                      onClick={async () => {
+                        await onMarkReady(orderId);
+                        fetchDetail();
+                      }}
+                      disabled={isActionExecuting}
+                      className="flex-1 py-3 bg-[#2CD6EB] hover:bg-[#20b8cb] text-[#0F121C] rounded-xl font-bold text-xs shadow-lg shadow-[#2CD6EB]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isActionExecuting ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <>
+                          <CheckCircle2 size={16} />
+                          Mark Order as Ready
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {isRejectActionable && (
+                    <button
+                      onClick={() => onOpenRejectModal(order)}
+                      disabled={isActionExecuting}
+                      className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Ban size={16} />
+                      Reject Order
+                    </button>
+                  )}
+
+                  {!isReadyActionable && !isRejectActionable && (
+                    <div className="w-full py-3 px-4 rounded-xl bg-white/5 border border-white/5 text-center text-xs text-gray-400 font-medium">
+                      Order status is <span className="text-white font-bold">{order.status}</span>. No further actions required.
+                    </div>
+                  )}
+                </div>
+              </div>
             </>
           ) : null}
         </div>
@@ -501,27 +600,93 @@ const VendorDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [rejectingOrder, setRejectingOrder] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (type, msg) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const fetchData = useCallback(async (isSilent = false) => {
+    try {
+      if (!isSilent) setLoading(true);
+      else setRefreshing(true);
+
+      const [dashData, ordersData] = await Promise.all([
+        vendorService.getDashboard(),
+        vendorService.getOrders(),
+      ]);
+      setDashboard(dashData);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+      setError(null);
+    } catch (err) {
+      if (!isSilent) {
+        setError(getApiErrorMessage(err, 'Failed to load dashboard data.'));
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [dashData, ordersData] = await Promise.all([
-          vendorService.getDashboard(),
-          vendorService.getOrders(),
-        ]);
-        setDashboard(dashData);
-        setOrders(Array.isArray(ordersData) ? ordersData : []);
-      } catch (err) {
-        setError(getApiErrorMessage(err, 'Failed to load dashboard data.'));
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  // Auto-refresh interval (15s)
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 15_000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, fetchData]);
+
+  // ── Action Handlers ───────────────────────
+  const handleMarkReady = async (orderId, e) => {
+    if (e) e.stopPropagation();
+    setActionLoadingId(orderId);
+    try {
+      await vendorService.markOrderReady(orderId);
+      setOrders((prev) =>
+        prev.map((o) => ((o.order_id || o.id) === orderId ? { ...o, status: 'Ready' } : o))
+      );
+      showToast('success', `Order #${String(orderId).toUpperCase()} marked as Ready! 🚀`);
+    } catch (err) {
+      showToast('error', getApiErrorMessage(err, 'Failed to mark order as ready.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleInitiateReject = (order, e) => {
+    if (e) e.stopPropagation();
+    setRejectingOrder(order);
+  };
+
+  const handleConfirmReject = async (orderId) => {
+    setActionLoadingId(orderId);
+    try {
+      await vendorService.rejectOrder(orderId);
+      setOrders((prev) =>
+        prev.map((o) => ((o.order_id || o.id) === orderId ? { ...o, status: 'Rejected' } : o))
+      );
+      setRejectingOrder(null);
+      showToast('success', `Order #${String(orderId).toUpperCase()} rejected. 🛑`);
+    } catch (err) {
+      showToast('error', getApiErrorMessage(err, 'Failed to reject order.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -540,7 +705,7 @@ const VendorDashboard = () => {
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl p-6 text-center">
           <p className="font-medium">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => fetchData()}
             className="mt-4 px-6 py-2.5 bg-red-500/20 hover:bg-red-500/30 rounded-xl text-sm font-bold transition-colors"
           >
             Retry
@@ -569,8 +734,46 @@ const VendorDashboard = () => {
     return 'Good evening';
   };
 
+  // Filtered orders logic
+  const filteredOrders = orders.filter((o) => {
+    const st = (o.status || '').toLowerCase();
+    const idStr = String(o.order_id || o.id || '').toLowerCase();
+    const custName = String(o.customer_name || '').toLowerCase();
+
+    // Status tab filter
+    if (statusFilter === 'PENDING') {
+      if (['ready', 'completed', 'delivered', 'rejected', 'cancelled'].includes(st)) return false;
+    } else if (statusFilter === 'READY') {
+      if (st !== 'ready') return false;
+    } else if (statusFilter === 'COMPLETED') {
+      if (!['completed', 'delivered'].includes(st)) return false;
+    } else if (statusFilter === 'REJECTED') {
+      if (!['rejected', 'cancelled'].includes(st)) return false;
+    }
+
+    // Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      return idStr.includes(q) || custName.includes(q);
+    }
+
+    return true;
+  });
+
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-4xl mx-auto pb-24">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-4xl mx-auto pb-24 relative">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[120] flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-bold shadow-2xl border animate-in slide-in-from-top-3 duration-200 ${
+          toast.type === 'success'
+            ? 'bg-[#171B26] border-green-500/30 text-green-400 shadow-green-500/10'
+            : 'bg-[#171B26] border-red-500/30 text-red-400 shadow-red-500/10'
+        }`}>
+          {toast.type === 'success' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+          <span>{toast.msg}</span>
+        </div>
+      )}
+
       {/* ── Greeting ─────────────────────────── */}
       <div>
         <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">
@@ -628,84 +831,202 @@ const VendorDashboard = () => {
         </button>
       </div>
 
-      {/* ── Orders List ──────────────────────── */}
-      <div>
-        <div className="flex items-center justify-between mb-4 px-1">
-          <h3 className="text-base md:text-lg font-bold text-white">Today's Orders</h3>
-          {orders.length > 0 && (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-white/5 px-2.5 py-1 rounded-full">
-              {orders.length} total
-            </span>
+      {/* ── Orders Management Section ──────────────────────── */}
+      <div className="space-y-4">
+        {/* Header & Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base md:text-lg font-bold text-white">Orders Management</h3>
+            {refreshing && <Loader2 size={16} className="animate-spin text-[#2CD6EB]" />}
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Live Indicator Toggle */}
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${
+                autoRefresh
+                  ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                  : 'bg-white/5 border-white/10 text-gray-500'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+              {autoRefresh ? 'Live' : 'Paused'}
+            </button>
+
+            {/* Manual Refresh Button */}
+            <button
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-gray-400 hover:text-white transition-all disabled:opacity-50"
+              title="Refresh Orders"
+            >
+              <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by customer name or order ID..."
+            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#2CD6EB]/40 transition-colors"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+            >
+              <X size={14} />
+            </button>
           )}
         </div>
 
-        {orders.length === 0 ? (
-          <div className="text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl">
-            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ShoppingBag size={28} className="text-gray-600" />
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {[
+            { id: 'ALL', label: 'All Orders' },
+            { id: 'PENDING', label: 'Pending / Paid' },
+            { id: 'READY', label: 'Ready' },
+            { id: 'COMPLETED', label: 'Completed' },
+            { id: 'REJECTED', label: 'Rejected' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                statusFilter === tab.id
+                  ? 'bg-[#2CD6EB]/10 border-[#2CD6EB]/30 text-[#2CD6EB]'
+                  : 'bg-white/[0.02] border-white/5 text-gray-400 hover:bg-white/5'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Orders List */}
+        {filteredOrders.length === 0 ? (
+          <div className="text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2">
+            <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
+              <ShoppingBag size={24} className="text-gray-600" />
             </div>
-            <p className="text-gray-500 font-medium text-sm">No orders yet today.</p>
-            <p className="text-gray-600 text-xs mt-1">They'll appear here in real time.</p>
+            <p className="text-gray-400 font-medium text-sm">No orders found.</p>
+            <p className="text-gray-600 text-xs">
+              {searchQuery || statusFilter !== 'ALL'
+                ? 'Try adjusting your search query or filter tab.'
+                : 'Orders will appear here in real time.'}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.map((order) => (
-              <div
-                key={order.id || order.order_id}
-                onClick={() => setSelectedOrderId(order.order_id || order.id)}
-                className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-all cursor-pointer active:scale-[0.98] group/card"
-              >
-                {/* Order header */}
-                <div className="flex justify-between items-start border-b border-white/5 pb-3 mb-3">
-                  <div>
-                    <p className="text-[10px] font-bold text-[#2CD6EB] tracking-wider mb-0.5">
-                      #{String(order.order_id || order.id || '').toUpperCase()}
-                    </p>
-                    <h4 className="text-white font-bold text-sm">{order.customer_name || 'Customer'}</h4>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex flex-col items-end">
-                      <span className="text-base md:text-lg font-extrabold text-white">
-                        {formatMoney(order.total_amount || order.total_price)}
-                      </span>
-                      <div className="flex items-center gap-1 text-[10px] text-gray-600 mt-0.5">
-                        <Clock size={10} />
-                        {fmtTime(order.created_at)}
-                      </div>
+            {filteredOrders.map((order) => {
+              const orderId = order.order_id || order.id;
+              const st = (order.status || '').toLowerCase();
+              const isReadyActionable = ['paid', 'confirmed'].includes(st);
+              const isRejectActionable = !['rejected', 'refunded', 'cancelled', 'completed', 'delivered'].includes(st);
+              const isActionExecuting = actionLoadingId === orderId;
+
+              return (
+                <div
+                  key={orderId}
+                  onClick={() => setSelectedOrderId(orderId)}
+                  className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-all cursor-pointer active:scale-[0.99] group/card space-y-3"
+                >
+                  {/* Order header */}
+                  <div className="flex justify-between items-start border-b border-white/5 pb-3">
+                    <div>
+                      <p className="text-[10px] font-bold text-[#2CD6EB] tracking-wider mb-0.5">
+                        #{String(orderId).toUpperCase()}
+                      </p>
+                      <h4 className="text-white font-bold text-sm">{order.customer_name || 'Customer'}</h4>
                     </div>
-                    <ChevronRight size={16} className="text-gray-600 group-hover/card:text-gray-400 transition-colors shrink-0" />
-                  </div>
-                </div>
-
-                {/* Order items */}
-                {order.items && order.items.length > 0 && (
-                  <div className="text-sm text-gray-400 mb-3 space-y-1">
-                    {order.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between">
-                        <span>
-                          <span className="text-gray-600 font-bold mr-1.5">{item.quantity}×</span>
-                          {item.menu_item_name}
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col items-end">
+                        <span className="text-base md:text-lg font-extrabold text-white">
+                          {formatMoney(order.total_amount || order.total_price)}
                         </span>
+                        <div className="flex items-center gap-1 text-[10px] text-gray-500 mt-0.5">
+                          <Clock size={10} />
+                          {fmtTime(order.created_at)}
+                        </div>
                       </div>
-                    ))}
+                      <ChevronRight size={16} className="text-gray-600 group-hover/card:text-gray-400 transition-colors shrink-0 ml-1" />
+                    </div>
                   </div>
-                )}
 
-                {/* Status badges */}
-                <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                    order.payment_status === 'PAID'
-                      ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                      : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
-                  }`}>
-                    {order.payment_status || 'PENDING'}
-                  </span>
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#2CD6EB]/10 text-[#2CD6EB] border border-[#2CD6EB]/20 uppercase tracking-wider">
-                    {order.status || 'Received'}
-                  </span>
+                  {/* Order items summary */}
+                  {order.items && order.items.length > 0 && (
+                    <div className="text-xs text-gray-400 space-y-1">
+                      {order.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between">
+                          <span>
+                            <span className="text-gray-500 font-bold mr-1.5">{item.quantity}×</span>
+                            {item.menu_item_name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Badges & Quick Action Buttons */}
+                  <div className="flex flex-wrap justify-between items-center pt-2 border-t border-white/5 gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                        order.payment_status === 'PAID'
+                          ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                          : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                      }`}>
+                        {order.payment_status || 'PENDING'}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                        st === 'ready'
+                          ? 'bg-[#2CD6EB]/10 text-[#2CD6EB] border-[#2CD6EB]/20'
+                          : st === 'rejected' || st === 'cancelled'
+                          ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                          : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      }`}>
+                        {order.status || 'Received'}
+                      </span>
+                    </div>
+
+                    {/* Inline Actions */}
+                    <div className="flex items-center gap-2">
+                      {isReadyActionable && (
+                        <button
+                          onClick={(e) => handleMarkReady(orderId, e)}
+                          disabled={isActionExecuting}
+                          className="px-3 py-1.5 bg-[#2CD6EB] hover:bg-[#20b8cb] text-[#0F121C] rounded-xl text-xs font-bold transition-all shadow-md shadow-[#2CD6EB]/15 flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {isActionExecuting ? (
+                            <Loader2 size={13} className="animate-spin" />
+                          ) : (
+                            <>
+                              <CheckCircle2 size={13} />
+                              Mark Ready
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {isRejectActionable && (
+                        <button
+                          onClick={(e) => handleInitiateReject(order, e)}
+                          disabled={isActionExecuting}
+                          className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <Ban size={13} />
+                          Reject
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -717,6 +1038,19 @@ const VendorDashboard = () => {
           onClose={() => setSelectedOrderId(null)}
           formatMoney={formatMoney}
           fmtTime={fmtTime}
+          onMarkReady={handleMarkReady}
+          onOpenRejectModal={setRejectingOrder}
+          actionLoadingId={actionLoadingId}
+        />
+      )}
+
+      {/* ── Rejection Confirm Modal ───────────── */}
+      {rejectingOrder && (
+        <RejectionConfirmModal
+          order={rejectingOrder}
+          onClose={() => setRejectingOrder(null)}
+          onConfirm={handleConfirmReject}
+          loading={actionLoadingId === (rejectingOrder.order_id || rejectingOrder.id)}
         />
       )}
     </div>

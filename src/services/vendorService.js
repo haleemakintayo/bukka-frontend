@@ -23,6 +23,18 @@ export const vendorService = {
     return response.data;
   },
 
+  /** POST /vendors/me/orders/{orderId}/ready — mark order as ready */
+  markOrderReady: async (orderId) => {
+    const response = await apiClient.post(`/vendors/me/orders/${orderId}/ready`);
+    return response.data;
+  },
+
+  /** POST /vendors/me/orders/{orderId}/reject — reject order, reverse stock, notify customer */
+  rejectOrder: async (orderId) => {
+    const response = await apiClient.post(`/vendors/me/orders/${orderId}/reject`);
+    return response.data;
+  },
+
   getMenu: async () => {
     const response = await apiClient.get('/vendors/me/menu');
     return response.data;
