@@ -669,7 +669,11 @@ const VendorDashboard = () => {
             {filteredOrders.map((order) => {
               const orderId = order.order_id || order.id;
               const st = (order.status || '').toLowerCase();
-              const isReadyActionable = ['paid', 'confirmed'].includes(st);
+              const isPaidOrPending = ['pending', 'paid', 'confirmed', 'received', ''].includes(st);
+              const isPreparing = st === 'preparing' || st === 'cooking';
+              const isReady = st === 'ready';
+              const isDelivery = (order.order_type || '').toLowerCase() === 'delivery';
+              const isDispatched = st === 'dispatched' || st === 'out_for_delivery';
               const isRejectActionable = !['rejected', 'refunded', 'cancelled', 'completed', 'delivered'].includes(st);
               const isActionExecuting = actionLoadingId === orderId;
 
