@@ -6,8 +6,13 @@ import {
   Loader2, TrendingUp, ShoppingBag, Clock, LayoutList,
   Wallet, Package, Power, PauseCircle, CheckCircle2, XCircle, AlertTriangle,
   X, MapPin, Phone, CreditCard, FileText, ChevronRight, Eye, Truck, Store,
-  Search, Ban, RefreshCw, Filter, Check
+  Search, Ban, RefreshCw, Filter, Check, ChefHat
 } from 'lucide-react';
+
+import OrderDetailDrawer from '../../components/vendor/OrderDetailDrawer';
+import AcceptOrderModal from '../../components/vendor/AcceptOrderModal';
+import DispatchOrderModal from '../../components/vendor/DispatchOrderModal';
+import RejectOrderModal from '../../components/vendor/RejectOrderModal';
 
 // ─────────────────────────────────────────────
 // Store Status Widget
@@ -281,318 +286,6 @@ const StoreStatusWidget = () => {
 };
 
 // ─────────────────────────────────────────────
-// Rejection Confirmation Modal
-// ─────────────────────────────────────────────
-const RejectionConfirmModal = ({ order, onClose, onConfirm, loading }) => {
-  if (!order) return null;
-  const orderId = order.order_id || order.id;
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-[#171B26] border border-red-500/20 rounded-3xl p-6 shadow-2xl z-10 animate-in zoom-in-95 duration-200 space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
-          <Ban size={24} />
-        </div>
-        <div className="text-center">
-          <h3 className="text-lg font-extrabold text-white">Reject Order #{String(orderId).toUpperCase()}?</h3>
-          <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-            Are you sure you want to reject this order for <span className="text-white font-semibold">{order.customer_name || 'Customer'}</span>?
-            This will reverse stock deductions and automatically notify the customer.
-          </p>
-        </div>
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onConfirm(orderId)}
-            disabled={loading}
-            className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : 'Confirm Rejection'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────
-// Order Detail Modal
-// ─────────────────────────────────────────────
-const OrderDetailModal = ({
-  orderId,
-  onClose,
-  formatMoney,
-  fmtTime,
-  onMarkReady,
-  onOpenRejectModal,
-  actionLoadingId,
-}) => {
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchDetail = useCallback(async () => {
-    if (!orderId) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await vendorService.getOrderDetail(orderId);
-      setOrder(data);
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load order details.'));
-    } finally {
-      setLoading(false);
-    }
-  }, [orderId]);
-
-  useEffect(() => {
-    fetchDetail();
-  }, [fetchDetail]);
-
-  if (!orderId) return null;
-
-  const fmtDate = (isoString) => {
-    if (!isoString) return '';
-    return new Date(isoString).toLocaleDateString('en-NG', {
-      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-    });
-  };
-
-  const getStatusColor = (status) => {
-    const s = (status || '').toLowerCase();
-    if (s === 'paid' || s === 'confirmed' || s === 'delivered' || s === 'completed') return 'text-green-400 bg-green-500/10 border-green-500/20';
-    if (s === 'ready') return 'text-[#2CD6EB] bg-[#2CD6EB]/10 border-[#2CD6EB]/20';
-    if (s === 'rejected' || s === 'cancelled' || s === 'failed') return 'text-red-400 bg-red-500/10 border-red-500/20';
-    return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-  };
-
-  const getPaymentColor = (status) => {
-    if (status === 'PAID') return 'text-green-400 bg-green-500/10 border-green-500/20';
-    if (status === 'FAILED') return 'text-red-400 bg-red-500/10 border-red-500/20';
-    return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
-  };
-
-  const currentStatus = (order?.status || '').toLowerCase();
-  const isReadyActionable = ['paid', 'confirmed'].includes(currentStatus);
-  const isRejectActionable = !['rejected', 'refunded', 'cancelled', 'completed', 'delivered'].includes(currentStatus);
-  const isActionExecuting = actionLoadingId === orderId;
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative w-full sm:max-w-lg bg-[#171B26] border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col">
-        {/* Drag handle (mobile) */}
-        <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#2CD6EB]/10 flex items-center justify-center">
-              <Eye size={16} className="text-[#2CD6EB]" />
-            </div>
-            <div>
-              <h3 className="text-base font-extrabold text-white">Order Details</h3>
-              <p className="text-[10px] font-bold text-[#2CD6EB] tracking-wider">#{String(orderId).toUpperCase()}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 size={28} className="animate-spin text-[#FA6131]" />
-              <p className="text-sm text-gray-500 font-medium">Loading order details…</p>
-            </div>
-          ) : error ? (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl p-5 text-center">
-              <p className="text-sm font-medium">{error}</p>
-            </div>
-          ) : order ? (
-            <>
-              {/* ── Customer & Status ────────── */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Customer</p>
-                  <h4 className="text-lg font-extrabold text-white">{order.customer_name || 'Customer'}</h4>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-                    <Clock size={11} />
-                    <span>{fmtDate(order.created_at)} • {fmtTime(order.created_at)}</span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1.5">
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${getStatusColor(order.status)}`}>
-                    {order.status || 'Received'}
-                  </span>
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${getPaymentColor(order.payment_status)}`}>
-                    {order.payment_status || 'PENDING'}
-                  </span>
-                </div>
-              </div>
-
-              {/* ── Order Type Badge ────────── */}
-              <div className="flex items-center gap-2">
-                <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold ${
-                  order.order_type === 'delivery'
-                    ? 'bg-[#FA6131]/10 border-[#FA6131]/20 text-[#FA6131]'
-                    : 'bg-[#2CD6EB]/10 border-[#2CD6EB]/20 text-[#2CD6EB]'
-                }`}>
-                  {order.order_type === 'delivery' ? <Truck size={14} /> : <Store size={14} />}
-                  {order.order_type === 'delivery' ? 'Delivery' : 'Pickup'}
-                </div>
-              </div>
-
-              {/* ── Items Breakdown ────────── */}
-              <div className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-white/5">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Items Ordered</p>
-                </div>
-                <div className="divide-y divide-white/5">
-                  {order.items && order.items.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between px-4 py-3">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">
-                          {item.quantity}×
-                        </span>
-                        <span className="text-sm text-white font-medium truncate">{item.menu_item_name}</span>
-                      </div>
-                      <div className="text-right shrink-0 ml-3">
-                        <p className="text-sm font-bold text-white">{formatMoney(item.line_total || (item.quantity * item.unit_price))}</p>
-                        <p className="text-[10px] text-gray-600">@ {formatMoney(item.unit_price)} ea.</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Total */}
-                <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02] border-t border-white/5">
-                  <span className="text-sm font-bold text-gray-400">Total</span>
-                  <span className="text-lg font-extrabold text-white">{formatMoney(order.total_amount)}</span>
-                </div>
-              </div>
-
-              {/* ── Delivery Info ────────── */}
-              {order.order_type === 'delivery' && order.delivery_address && (
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-3">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Delivery Details</p>
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#FA6131]/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <MapPin size={14} className="text-[#FA6131]" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-white font-medium">{order.delivery_address}</p>
-                      {(order.delivery_note || order.notes) && (
-                        <p className="text-xs text-gray-500 mt-1 italic">
-                          "{order.delivery_note || order.notes}"
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Customer Contact ────────── */}
-              {order.customer_phone && (
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
-                      <Phone size={14} className="text-green-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Customer Phone</p>
-                      <a
-                        href={`tel:${order.customer_phone}`}
-                        className="text-sm text-[#2CD6EB] font-bold hover:underline"
-                      >
-                        {order.customer_phone}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Payment Reference ────────── */}
-              {order.payment_reference && (
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                      <CreditCard size={14} className="text-amber-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Payment Reference</p>
-                      <p className="text-xs text-gray-300 font-mono truncate">{order.payment_reference}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Vendor Action Controls ────────── */}
-              <div className="pt-2 border-t border-white/5 space-y-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Order Actions</p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  {isReadyActionable && (
-                    <button
-                      onClick={async () => {
-                        await onMarkReady(orderId);
-                        fetchDetail();
-                      }}
-                      disabled={isActionExecuting}
-                      className="flex-1 py-3 bg-[#2CD6EB] hover:bg-[#20b8cb] text-[#0F121C] rounded-xl font-bold text-xs shadow-lg shadow-[#2CD6EB]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {isActionExecuting ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <>
-                          <CheckCircle2 size={16} />
-                          Mark Order as Ready
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {isRejectActionable && (
-                    <button
-                      onClick={() => onOpenRejectModal(order)}
-                      disabled={isActionExecuting}
-                      className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <Ban size={16} />
-                      Reject Order
-                    </button>
-                  )}
-
-                  {!isReadyActionable && !isRejectActionable && (
-                    <div className="w-full py-3 px-4 rounded-xl bg-white/5 border border-white/5 text-center text-xs text-gray-400 font-medium">
-                      Order status is <span className="text-white font-bold">{order.status}</span>. No further actions required.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────
 // Main Dashboard
 // ─────────────────────────────────────────────
 const VendorDashboard = () => {
@@ -607,6 +300,8 @@ const VendorDashboard = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [acceptingOrder, setAcceptingOrder] = useState(null);
+  const [dispatchingOrder, setDispatchingOrder] = useState(null);
   const [rejectingOrder, setRejectingOrder] = useState(null);
   const [toast, setToast] = useState(null);
 
@@ -622,7 +317,7 @@ const VendorDashboard = () => {
 
       const [dashData, ordersData] = await Promise.all([
         vendorService.getDashboard(),
-        vendorService.getOrders(),
+        vendorService.getOrders({ limit: 20 }),
       ]);
       setDashboard(dashData);
       setOrders(Array.isArray(ordersData) ? ordersData : []);
@@ -651,6 +346,23 @@ const VendorDashboard = () => {
   }, [autoRefresh, fetchData]);
 
   // ── Action Handlers ───────────────────────
+  const handleConfirmAccept = async (orderId, data) => {
+    setActionLoadingId(orderId);
+    try {
+      await vendorService.acceptOrder(orderId, data);
+      setOrders((prev) =>
+        prev.map((o) => ((o.order_id || o.id) === orderId ? { ...o, status: 'Preparing' } : o))
+      );
+      setAcceptingOrder(null);
+      showToast('success', `Order #${String(orderId).toUpperCase()} accepted! 👨‍🍳`);
+      fetchData(true);
+    } catch (err) {
+      showToast('error', getApiErrorMessage(err, 'Failed to accept order.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const handleMarkReady = async (orderId, e) => {
     if (e) e.stopPropagation();
     setActionLoadingId(orderId);
@@ -660,6 +372,7 @@ const VendorDashboard = () => {
         prev.map((o) => ((o.order_id || o.id) === orderId ? { ...o, status: 'Ready' } : o))
       );
       showToast('success', `Order #${String(orderId).toUpperCase()} marked as Ready! 🚀`);
+      fetchData(true);
     } catch (err) {
       showToast('error', getApiErrorMessage(err, 'Failed to mark order as ready.'));
     } finally {
@@ -667,20 +380,50 @@ const VendorDashboard = () => {
     }
   };
 
-  const handleInitiateReject = (order, e) => {
-    if (e) e.stopPropagation();
-    setRejectingOrder(order);
-  };
-
-  const handleConfirmReject = async (orderId) => {
+  const handleConfirmDispatch = async (orderId, data) => {
     setActionLoadingId(orderId);
     try {
-      await vendorService.rejectOrder(orderId);
+      await vendorService.dispatchOrder(orderId, data);
+      setOrders((prev) =>
+        prev.map((o) => ((o.order_id || o.id) === orderId ? { ...o, status: 'Dispatched' } : o))
+      );
+      setDispatchingOrder(null);
+      showToast('success', `Order #${String(orderId).toUpperCase()} dispatched! 🚚`);
+      fetchData(true);
+    } catch (err) {
+      showToast('error', getApiErrorMessage(err, 'Failed to dispatch order.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDeliver = async (orderId, e) => {
+    if (e) e.stopPropagation();
+    setActionLoadingId(orderId);
+    try {
+      await vendorService.deliverOrder(orderId);
+      setOrders((prev) =>
+        prev.map((o) => ((o.order_id || o.id) === orderId ? { ...o, status: 'Delivered' } : o))
+      );
+      showToast('success', `Order #${String(orderId).toUpperCase()} completed! 🎉`);
+      fetchData(true);
+    } catch (err) {
+      showToast('error', getApiErrorMessage(err, 'Failed to complete order.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleConfirmReject = async (orderId, data) => {
+    setActionLoadingId(orderId);
+    try {
+      await vendorService.rejectOrder(orderId, data);
       setOrders((prev) =>
         prev.map((o) => ((o.order_id || o.id) === orderId ? { ...o, status: 'Rejected' } : o))
       );
       setRejectingOrder(null);
-      showToast('success', `Order #${String(orderId).toUpperCase()} rejected. 🛑`);
+      showToast('info', `Order #${String(orderId).toUpperCase()} rejected. 🛑`);
+      fetchData(true);
     } catch (err) {
       showToast('error', getApiErrorMessage(err, 'Failed to reject order.'));
     } finally {
@@ -995,7 +738,21 @@ const VendorDashboard = () => {
 
                     {/* Inline Actions */}
                     <div className="flex items-center gap-2">
-                      {isReadyActionable && (
+                      {isPaidOrPending && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAcceptingOrder(order);
+                          }}
+                          disabled={isActionExecuting}
+                          className="px-3 py-1.5 bg-[#FA6131] hover:bg-[#e05327] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-[#FA6131]/15 flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <ChefHat size={13} />
+                          Accept ({order.estimated_prep_minutes || 15}m)
+                        </button>
+                      )}
+
+                      {isPreparing && (
                         <button
                           onClick={(e) => handleMarkReady(orderId, e)}
                           disabled={isActionExecuting}
@@ -1012,14 +769,48 @@ const VendorDashboard = () => {
                         </button>
                       )}
 
+                      {isReady && isDelivery && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDispatchingOrder(order);
+                          }}
+                          disabled={isActionExecuting}
+                          className="px-3 py-1.5 bg-[#2CD6EB] hover:bg-[#20b8cb] text-[#0F121C] rounded-xl text-xs font-bold transition-all shadow-md shadow-[#2CD6EB]/15 flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <Truck size={13} />
+                          Dispatch
+                        </button>
+                      )}
+
+                      {((isReady && !isDelivery) || isDispatched) && (
+                        <button
+                          onClick={(e) => handleDeliver(orderId, e)}
+                          disabled={isActionExecuting}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/15 flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {isActionExecuting ? (
+                            <Loader2 size={13} className="animate-spin" />
+                          ) : (
+                            <>
+                              <CheckCircle2 size={13} />
+                              Complete
+                            </>
+                          )}
+                        </button>
+                      )}
+
                       {isRejectActionable && (
                         <button
-                          onClick={(e) => handleInitiateReject(order, e)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRejectingOrder(order);
+                          }}
                           disabled={isActionExecuting}
                           className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1 disabled:opacity-50"
                         >
                           <Ban size={13} />
-                          Reject
+                          Decline
                         </button>
                       )}
                     </div>
@@ -1031,28 +822,54 @@ const VendorDashboard = () => {
         )}
       </div>
 
-      {/* ── Order Detail Modal ────────────────── */}
-      {selectedOrderId && (
-        <OrderDetailModal
-          orderId={selectedOrderId}
-          onClose={() => setSelectedOrderId(null)}
-          formatMoney={formatMoney}
-          fmtTime={fmtTime}
-          onMarkReady={handleMarkReady}
-          onOpenRejectModal={setRejectingOrder}
-          actionLoadingId={actionLoadingId}
-        />
-      )}
+      {/* ── Order Detail Drawer ───────────────── */}
+      <OrderDetailDrawer
+        orderId={selectedOrderId}
+        isOpen={Boolean(selectedOrderId)}
+        onClose={() => setSelectedOrderId(null)}
+        onOpenAcceptModal={(o) => {
+          setSelectedOrderId(null);
+          setAcceptingOrder(o);
+        }}
+        onOpenDispatchModal={(o) => {
+          setSelectedOrderId(null);
+          setDispatchingOrder(o);
+        }}
+        onOpenRejectModal={(o) => {
+          setSelectedOrderId(null);
+          setRejectingOrder(o);
+        }}
+        onMarkReady={handleMarkReady}
+        onDeliver={handleDeliver}
+        isExecuting={actionLoadingId === selectedOrderId}
+      />
 
-      {/* ── Rejection Confirm Modal ───────────── */}
-      {rejectingOrder && (
-        <RejectionConfirmModal
-          order={rejectingOrder}
-          onClose={() => setRejectingOrder(null)}
-          onConfirm={handleConfirmReject}
-          loading={actionLoadingId === (rejectingOrder.order_id || rejectingOrder.id)}
-        />
-      )}
+      {/* ── Accept Order Modal ────────────────── */}
+      <AcceptOrderModal
+        order={acceptingOrder}
+        isOpen={Boolean(acceptingOrder)}
+        onClose={() => setAcceptingOrder(null)}
+        onConfirm={handleConfirmAccept}
+        isSubmitting={actionLoadingId === (acceptingOrder?.order_id || acceptingOrder?.id)}
+      />
+
+      {/* ── Dispatch Order Modal ──────────────── */}
+      <DispatchOrderModal
+        order={dispatchingOrder}
+        isOpen={Boolean(dispatchingOrder)}
+        onClose={() => setDispatchingOrder(null)}
+        onConfirm={handleConfirmDispatch}
+        isSubmitting={actionLoadingId === (dispatchingOrder?.order_id || dispatchingOrder?.id)}
+      />
+
+      {/* ── Reject / Cancel Modal ─────────────── */}
+      <RejectOrderModal
+        order={rejectingOrder}
+        isOpen={Boolean(rejectingOrder)}
+        onClose={() => setRejectingOrder(null)}
+        onConfirm={handleConfirmReject}
+        isSubmitting={actionLoadingId === (rejectingOrder?.order_id || rejectingOrder?.id)}
+      />
     </div>
   );
 };

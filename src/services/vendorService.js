@@ -12,8 +12,40 @@ export const vendorService = {
     return response.data;
   },
 
-  getOrders: async (skip = 0, limit = 20) => {
-    const response = await apiClient.get('/vendors/me/orders', { params: { skip, limit } });
+  // ── Order Management & Fulfillment Endpoints ──────────────────────────────
+
+  /**
+   * GET /vendors/me/orders/summary — 5s polling summary
+   * Returns { new_unaccepted_count, active_total_count, ready_count, latest_order_id, server_timestamp }
+   */
+  getOrdersSummary: async () => {
+    const response = await apiClient.get('/vendors/me/orders/summary');
+    return response.data;
+  },
+
+  /**
+   * GET /vendors/me/orders/board — Kanban view
+   * Returns { new_paid: [], preparing: [], ready_for_pickup: [], out_for_delivery: [], counts: {} }
+   */
+  getOrdersBoard: async () => {
+    const response = await apiClient.get('/vendors/me/orders/board');
+    return response.data;
+  },
+
+  /**
+   * GET /vendors/me/orders — filtered list of orders
+   * @param {Object} params - { tab, status, order_type, payment_status, search, start_date, end_date, page, limit, skip }
+   */
+  getOrders: async (params = {}) => {
+    const response = await apiClient.get('/vendors/me/orders', { params });
+    return response.data;
+  },
+
+  /**
+   * GET /vendors/me/orders/paginated — enveloped paginated list
+   */
+  getOrdersPaginated: async (params = {}) => {
+    const response = await apiClient.get('/vendors/me/orders/paginated', { params });
     return response.data;
   },
 
@@ -23,17 +55,50 @@ export const vendorService = {
     return response.data;
   },
 
-  /** POST /vendors/me/orders/{orderId}/ready — mark order as ready */
-  markOrderReady: async (orderId) => {
-    const response = await apiClient.post(`/vendors/me/orders/${orderId}/ready`);
+  /** POST /vendors/me/orders/{orderId}/accept — accept order & set kitchen prep time */
+  acceptOrder: async (orderId, data = {}) => {
+    const response = await apiClient.post(`/vendors/me/orders/${orderId}/accept`, data);
+    return response.data;
+  },
+
+  /** POST /vendors/me/orders/{orderId}/ready — mark food ready for pickup or dispatch */
+  markOrderReady: async (orderId, data = {}) => {
+    const response = await apiClient.post(`/vendors/me/orders/${orderId}/ready`, data);
+    return response.data;
+  },
+
+  /** POST /vendors/me/orders/{orderId}/dispatch — dispatch delivery order with rider info */
+  dispatchOrder: async (orderId, data = {}) => {
+    const response = await apiClient.post(`/vendors/me/orders/${orderId}/dispatch`, data);
+    return response.data;
+  },
+
+  /** POST /vendors/me/orders/{orderId}/deliver — complete order & send thank-you */
+  deliverOrder: async (orderId, data = {}) => {
+    const response = await apiClient.post(`/vendors/me/orders/${orderId}/deliver`, data);
     return response.data;
   },
 
   /** POST /vendors/me/orders/{orderId}/reject — reject order, reverse stock, notify customer */
-  rejectOrder: async (orderId) => {
-    const response = await apiClient.post(`/vendors/me/orders/${orderId}/reject`);
+  rejectOrder: async (orderId, data = {}) => {
+    const response = await apiClient.post(`/vendors/me/orders/${orderId}/reject`, data);
     return response.data;
   },
+
+  /** POST /vendors/me/orders/{orderId}/cancel — cancel in-progress order & reverse stock */
+  cancelOrder: async (orderId, data = {}) => {
+    const response = await apiClient.post(`/vendors/me/orders/${orderId}/cancel`, data);
+    return response.data;
+  },
+
+  /** POST /vendors/me/orders/batch — batch action on multiple orders */
+  batchFulfillOrders: async (payload) => {
+    // payload: { order_ids: number[], action: 'accept'|'ready'|'deliver', estimated_prep_minutes?: number }
+    const response = await apiClient.post('/vendors/me/orders/batch', payload);
+    return response.data;
+  },
+
+  // ── Menu Endpoints ────────────────────────────────────────────────────────
 
   getMenu: async () => {
     const response = await apiClient.get('/vendors/me/menu');
