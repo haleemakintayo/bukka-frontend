@@ -195,7 +195,7 @@ const LandingPage = () => {
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <a
-                  href="https://wa.me/2349012345678"
+                  href="https://wa.me/2349060251750"
                   className="bg-[#FA6131] text-white hover:bg-[#E65100] transition-colors duration-200 rounded-full font-bold px-8 py-3 text-center text-lg"
                 >
                   Join the Beta
@@ -360,7 +360,7 @@ const LandingPage = () => {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
             <a
-              href="https://wa.me/2349012345678"
+              href="https://wa.me/2349060251750"
               className="inline-flex items-center justify-center gap-2 px-8 py-3 font-bold text-white bg-[#FA6131] hover:bg-[#E65100] transition-colors duration-200 rounded-full text-lg"
             >
               <Wallet size={20} />
