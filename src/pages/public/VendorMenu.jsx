@@ -73,6 +73,7 @@ const VendorMenu = () => {
         ]);
         
         // Transform API response to match component structure
+        const rawCategories = menuData?.categories || menuData || {};
         setVendor({
           id: vendorData.vendor_id,
           slug: vendorData.slug || vendorSlug,
@@ -85,7 +86,7 @@ const VendorMenu = () => {
           image: vendorData.image || vendorData.cover_image,
           coverImage: vendorData.cover_image,
           tags: vendorData.tags || [],
-          categories: transformCategories(menuData.categories)
+          categories: transformCategories(rawCategories)
         });
       } catch (err) {
         console.error('Error fetching vendor:', err);
@@ -104,16 +105,39 @@ const VendorMenu = () => {
   // Transform API categories to component format
   const transformCategories = (categories) => {
     if (!categories) return [];
+    
+    if (Array.isArray(categories)) {
+      const grouped = {};
+      categories.forEach(item => {
+        const cat = item.category || 'General';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(item);
+      });
+      return Object.entries(grouped).map(([name, items]) => ({
+        name,
+        emoji: getCategoryEmoji(name),
+        items: items.map(item => ({
+          id: item.id.toString(),
+          name: item.name,
+          description: item.description || '',
+          price: item.price,
+          is_available: item.is_available !== false,
+          image: item.image || item.image_url || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+          popular: item.popular || false
+        }))
+      }));
+    }
+
     return Object.entries(categories).map(([name, items]) => ({
       name,
       emoji: getCategoryEmoji(name),
-      items: items.map(item => ({
+      items: (Array.isArray(items) ? items : []).map(item => ({
         id: item.id.toString(),
         name: item.name,
         description: item.description || '',
         price: item.price,
         is_available: item.is_available !== false,
-        image: item.image || null,
+        image: item.image || item.image_url || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
         popular: item.popular || false
       }))
     }));
@@ -207,80 +231,90 @@ const VendorMenu = () => {
 
       {/* Menu Feed */}
       <main className="p-6 space-y-10 max-w-2xl mx-auto overflow-hidden mt-4">
-        {vendor.categories.map((category, idx) => (
-          <section key={idx}>
-            {/* Category Header with emoji */}
-            <div className="flex items-center gap-3 mb-5">
-              <span className="text-3xl">{category.emoji}</span>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white tracking-tight">
-                {category.name}
-              </h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-gray-200 via-gray-300 to-transparent dark:from-gray-700 dark:via-gray-600 ml-2"></div>
-              <span className="text-xs font-medium text-gray-400">{category.items.length} items</span>
-            </div>
-            
-            <div className="grid gap-4">
-              {category.items.map(item => (
-                <div 
-                  key={item.id} 
-                  className={`group relative bg-white dark:bg-bukka-card-surface rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800
-                    ${!item.is_available && 'opacity-60 grayscale'}`}
-                >
-                  <div className="flex p-4 gap-4">
-                    {/* Food Image */}
-                    <div className="relative flex-shrink-0">
-                      <div className="w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
-                        <img 
-                          src={item.image} 
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      </div>
-                      {/* Popular badge */}
-                      {item.popular && (
-                        <div className="absolute -top-1 -left-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-bold rounded-full shadow-lg flex items-center gap-1">
-                          <span>🔥</span> Popular
+        {vendor.categories && vendor.categories.length > 0 ? (
+          vendor.categories.map((category, idx) => (
+            <section key={idx}>
+              {/* Category Header with emoji */}
+              <div className="flex items-center gap-3 mb-5">
+                <span className="text-3xl">{category.emoji}</span>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white tracking-tight">
+                  {category.name}
+                </h2>
+                <div className="flex-1 h-px bg-gradient-to-r from-gray-200 via-gray-300 to-transparent dark:from-gray-700 dark:via-gray-600 ml-2"></div>
+                <span className="text-xs font-medium text-gray-400">{category.items.length} items</span>
+              </div>
+              
+              <div className="grid gap-4">
+                {category.items.map(item => (
+                  <div 
+                    key={item.id} 
+                    className={`group relative bg-white dark:bg-bukka-card-surface rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800
+                      ${!item.is_available && 'opacity-60 grayscale'}`}
+                  >
+                    <div className="flex p-4 gap-4">
+                      {/* Food Image */}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                          <img 
+                            src={item.image} 
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
                         </div>
-                      )}
-                    </div>
-                    
-                    {/* Item Details */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-gray-900 dark:text-bukka-soft-white text-base leading-tight truncate">{item.name}</h3>
-                          {!item.is_available && (
-                            <span className="flex-shrink-0 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold">Sold Out</span>
-                          )}
-                        </div>
-                        {item.description && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">{item.description}</p>
+                        {/* Popular badge */}
+                        {item.popular && (
+                          <div className="absolute -top-1 -left-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-bold rounded-full shadow-lg flex items-center gap-1">
+                            <span>🔥</span> Popular
+                          </div>
                         )}
                       </div>
                       
-                      <div className="flex items-center justify-between mt-3">
-                        <p className="text-bukka-orange font-extrabold text-xl tracking-tight">₦{item.price.toLocaleString()}</p>
+                      {/* Item Details */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-bold text-gray-900 dark:text-bukka-soft-white text-base leading-tight truncate">{item.name}</h3>
+                            {!item.is_available && (
+                              <span className="flex-shrink-0 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold">Sold Out</span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">{item.description}</p>
+                          )}
+                        </div>
                         
-                        <button
-                          onClick={() => addToCart(item, vendor.slug, vendor.name, vendor.id)}
-                          disabled={!item.is_available || !vendor.isOpen}
-                          className={`flex items-center justify-center rounded-xl px-4 py-2.5 transition-all duration-300
-                            ${item.is_available && vendor.isOpen 
-                              ? 'bg-bukka-orange hover:bg-gradient-to-r hover:from-bukka-orange hover:to-orange-500 text-white shadow-lg shadow-bukka-orange/25 hover:shadow-bukka-orange/40 hover:scale-105 active:scale-95' 
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
-                          aria-label="Add to cart"
-                        >
-                          <Plus size={18} strokeWidth={3} />
-                          <span className="ml-1 text-sm font-bold">Add</span>
-                        </button>
+                        <div className="flex items-center justify-between mt-3">
+                          <p className="text-bukka-orange font-extrabold text-xl tracking-tight">₦{item.price.toLocaleString()}</p>
+                          
+                          <button
+                            onClick={() => addToCart(item, vendor.slug, vendor.name, vendor.id)}
+                            disabled={!item.is_available || !vendor.isOpen}
+                            className={`flex items-center justify-center rounded-xl px-4 py-2.5 transition-all duration-300
+                              ${item.is_available && vendor.isOpen 
+                                ? 'bg-bukka-orange hover:bg-gradient-to-r hover:from-bukka-orange hover:to-orange-500 text-white shadow-lg shadow-bukka-orange/25 hover:shadow-bukka-orange/40 hover:scale-105 active:scale-95' 
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
+                            aria-label="Add to cart"
+                          >
+                            <Plus size={18} strokeWidth={3} />
+                            <span className="ml-1 text-sm font-bold">Add</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
+                ))}
+              </div>
+            </section>
+          ))
+        ) : (
+          <div className="text-center py-16 px-4 bg-white dark:bg-bukka-card-surface rounded-3xl border border-gray-100 dark:border-gray-800 space-y-3">
+            <span className="text-4xl">🍽️</span>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-bukka-soft-white">Menu is being prepared</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+              This vendor hasn't made items available for online ordering yet. Please check back shortly!
+            </p>
+          </div>
+        )}
       </main>
 
       <CartSummaryBar />

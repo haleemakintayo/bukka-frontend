@@ -398,6 +398,12 @@ const VendorMenuManager = () => {
       let data;
       try {
         data = await vendorService.getMenuV2();
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          const legacyData = await vendorService.getMenu();
+          if (Array.isArray(legacyData) && legacyData.length > 0) {
+            data = legacyData;
+          }
+        }
       } catch {
         data = await vendorService.getMenu();
       }
