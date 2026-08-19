@@ -91,7 +91,7 @@ const OrderDetailDrawer = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#171B26] shrink-0">
           <div className="flex items-center gap-2.5">
             <span className="font-mono text-base font-extrabold text-[#2CD6EB]">
-              #{String(orderId).toUpperCase()}
+              #{String(order?.order_number || orderId).toUpperCase()}
             </span>
             {order && (
               <span

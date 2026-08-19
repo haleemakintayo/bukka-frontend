@@ -82,13 +82,39 @@ const Checkout = () => {
       // Verify payment with backend
       await publicService.verifyOrderPayment(reference.reference);
       
+      const receiptData = {
+        reference: reference.reference,
+        items: cartItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
+        subtotal: cartTotal,
+        convenienceFee: CONVENIENCE_FEE,
+        deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
+        total: finalTotal,
+        orderType,
+        vendorSlug: cartItems[0]?.vendorSlug,
+        vendorName: cartItems[0]?.vendorName || cartItems[0]?.vendorSlug,
+        customerName: customerName || null,
+        timestamp: new Date().toISOString(),
+      };
       clearCart();
-      navigate('/success', { state: { reference: reference.reference } });
+      navigate('/success', { state: receiptData });
     } catch (err) {
       console.error('Order verification failed:', err);
       // Still allow success for demo - in production you'd handle this
+      const receiptFallback = {
+        reference: reference.reference,
+        items: cartItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
+        subtotal: cartTotal,
+        convenienceFee: CONVENIENCE_FEE,
+        deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
+        total: finalTotal,
+        orderType,
+        vendorSlug: cartItems[0]?.vendorSlug,
+        vendorName: cartItems[0]?.vendorName || cartItems[0]?.vendorSlug,
+        customerName: customerName || null,
+        timestamp: new Date().toISOString(),
+      };
       clearCart();
-      navigate('/success', { state: { reference: reference.reference } });
+      navigate('/success', { state: receiptFallback });
     }
     setIsProcessing(false);
   };

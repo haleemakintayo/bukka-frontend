@@ -86,7 +86,8 @@ const VendorOrdersFulfillment = () => {
         lastOrderIdRef.current > 0
       ) {
         playNewOrderChime();
-        showToast('info', `🔔 New Order #${sumRes.latest_order_id} received!`);
+        const displayId = sumRes.latest_order_number || `#${sumRes.latest_order_id}`;
+        showToast('info', `🔔 New Order ${displayId} received!`);
       }
 
       if (sumRes?.latest_order_id) {
@@ -230,7 +231,7 @@ const VendorOrdersFulfillment = () => {
 
   const filteredOrders = orders.filter((o) => {
     const st = (o.status || '').toLowerCase();
-    const idStr = String(o.order_id || o.id || '').toLowerCase();
+    const idStr = String(o.order_number || o.order_id || o.id || '').toLowerCase();
     const custName = String(o.customer_name || '').toLowerCase();
     const custPhone = String(o.customer_phone || '').toLowerCase();
     const orderType = (o.order_type || 'pickup').toLowerCase();

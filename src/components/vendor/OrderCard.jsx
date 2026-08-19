@@ -17,7 +17,7 @@ const OrderCard = ({
   isActionExecuting = false,
   layout = 'card', // 'card' | 'kanban'
 }) => {
-  const orderId = order.order_id || order.id;
+  const orderId = order.order_number || order.order_id || order.id;
   const status = (order.status || '').toLowerCase();
   const isPaidOrPending = ['paid', 'pending'].includes(status);
   const isPreparing = status === 'preparing';

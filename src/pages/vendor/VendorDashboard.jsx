@@ -480,7 +480,7 @@ const VendorDashboard = () => {
   // Filtered orders logic
   const filteredOrders = orders.filter((o) => {
     const st = (o.status || '').toLowerCase();
-    const idStr = String(o.order_id || o.id || '').toLowerCase();
+    const idStr = String(o.order_number || o.order_id || o.id || '').toLowerCase();
     const custName = String(o.customer_name || '').toLowerCase();
 
     // Status tab filter
