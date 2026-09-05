@@ -70,7 +70,7 @@ Payment Trigger: An integrated "Pay with Paystack" button using the react-paysta
 
 Success View:
 
-Displays a large green checkmark, the Order Number (e.g., #042), and text: "Payment successful! Please return to WhatsApp for your pickup notification."
+Displays a large green checkmark, the Order Number (e.g., #BK-2608-A4F2), and text: "Payment successful! Please return to WhatsApp for your pickup notification."
 
 3.3. UX Constraints
 Mobile-First Strictness: 99% of traffic will be from student smartphones. The UI must feature large touch targets and avoid complex dropdowns.
