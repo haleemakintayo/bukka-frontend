@@ -157,15 +157,15 @@ const ScreenshotCarousel = ({ screenshots }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Decorative Neo-Brutalist Badges floating on preview */}
-      <div className="absolute -top-3 -right-2 sm:-right-4 z-20 px-3 py-1 bg-[#25D366] text-black font-display font-black text-xs uppercase tracking-wider rounded-lg border-2 border-black shadow-[3px_3px_0px_0px_#000] rotate-3">
+      <div className="absolute -top-2.5 right-1 sm:-right-3 z-20 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-[#25D366] text-black font-display font-black text-[10px] sm:text-xs uppercase tracking-wider rounded-md sm:rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000] sm:shadow-[3px_3px_0px_0px_#000] rotate-2 sm:rotate-3">
         💬 Live in WhatsApp
       </div>
-      <div className="absolute -bottom-2 -left-2 sm:-left-4 z-20 px-3 py-1 bg-[#FFE600] text-black font-display font-black text-xs uppercase tracking-wider rounded-lg border-2 border-black shadow-[3px_3px_0px_0px_#000] -rotate-3">
-        ⚡ Paystack Verified
+      <div className="absolute -bottom-2 left-1 sm:-left-3 z-20 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-[#FFE600] text-black font-display font-black text-[10px] sm:text-xs uppercase tracking-wider rounded-md sm:rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000] sm:shadow-[3px_3px_0px_0px_#000] -rotate-2 sm:-rotate-3">
+        ⚡ Paystack Direct
       </div>
 
       <div className="relative w-full flex justify-center items-center py-2">
-        <div className="relative w-full max-w-[280px] sm:max-w-[305px] overflow-hidden rounded-[2.2rem] border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_#000] dark:shadow-[8px_8px_0px_0px_#2CD6EB] bg-white dark:bg-[#111]">
+        <div className="relative w-full max-w-[260px] sm:max-w-[295px] overflow-hidden rounded-[2rem] border-3 sm:border-4 border-black dark:border-white shadow-[4px_4px_0px_0px_#000] sm:shadow-[6px_6px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#2CD6EB] sm:dark:shadow-[6px_6px_0px_0px_#2CD6EB] bg-white dark:bg-[#111]">
           <div
             className="flex transition-transform duration-500 ease-out"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -175,7 +175,7 @@ const ScreenshotCarousel = ({ screenshots }) => {
                 <img
                   src={img}
                   alt={`Bukka AI App Preview ${idx + 1}`}
-                  className="w-full h-auto object-contain rounded-[1.8rem]"
+                  className="w-full h-auto object-contain rounded-[1.6rem] sm:rounded-[1.8rem]"
                 />
               </div>
             ))}
@@ -186,33 +186,33 @@ const ScreenshotCarousel = ({ screenshots }) => {
             type="button"
             onClick={handlePrev}
             aria-label="Previous screenshot"
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-white dark:bg-[#1C2230] text-black dark:text-white border-2 border-black dark:border-white shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center transition-all cursor-pointer z-10"
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white dark:bg-[#1C2230] text-black dark:text-white border-2 border-black dark:border-white shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] dark:shadow-[1.5px_1.5px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center transition-all cursor-pointer z-10"
           >
-            <ChevronLeft size={20} className="stroke-[2.5]" />
+            <ChevronLeft size={18} className="stroke-[2.5]" />
           </button>
           <button
             type="button"
             onClick={handleNext}
             aria-label="Next screenshot"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-white dark:bg-[#1C2230] text-black dark:text-white border-2 border-black dark:border-white shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center transition-all cursor-pointer z-10"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white dark:bg-[#1C2230] text-black dark:text-white border-2 border-black dark:border-white shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] dark:shadow-[1.5px_1.5px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center transition-all cursor-pointer z-10"
           >
-            <ChevronRight size={20} className="stroke-[2.5]" />
+            <ChevronRight size={18} className="stroke-[2.5]" />
           </button>
         </div>
       </div>
 
       {/* Chunky Neo-Brutalist Dot Indicators */}
-      <div className="mt-5 flex items-center gap-2">
+      <div className="mt-4 sm:mt-5 flex items-center gap-2">
         {screenshots.map((_, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => setCurrentIndex(idx)}
             aria-label={`Go to slide ${idx + 1}`}
-            className={`h-3 rounded-md border-2 border-black dark:border-white transition-all duration-200 cursor-pointer ${
+            className={`h-2.5 sm:h-3 rounded-md border-2 border-black dark:border-white transition-all duration-200 cursor-pointer ${
               currentIndex === idx
-                ? 'w-8 bg-[#FA6131] shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]'
-                : 'w-3 bg-white dark:bg-[#1C2230] hover:bg-gray-200'
+                ? 'w-7 sm:w-8 bg-[#FA6131] shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] dark:shadow-[1.5px_1.5px_0px_0px_#fff]'
+                : 'w-2.5 sm:w-3 bg-white dark:bg-[#1C2230] hover:bg-gray-200'
             }`}
           />
         ))}
@@ -228,66 +228,66 @@ const LandingPage = () => {
     <div className="bg-[#FAF7EE] dark:bg-[#11141D] text-gray-950 dark:text-gray-100 min-h-screen selection:bg-[#FFE600] selection:text-black">
       
       {/* 1. Hero Section */}
-      <section className="pt-20 pb-16 md:pt-28 md:pb-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] items-center">
+      <section className="pt-16 pb-12 sm:pt-24 sm:pb-20 md:pt-28 md:pb-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] items-center">
             <div>
               {/* Sticker Pill Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border-2 border-black dark:border-white bg-[#FFE600] text-black font-display font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] mb-6">
-                <Sparkles size={14} className="fill-black" />
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-lg border-2 border-black dark:border-white bg-[#FFE600] text-black font-display font-black text-[11px] sm:text-xs uppercase tracking-wider shadow-[2.5px_2.5px_0px_0px_#000] sm:shadow-[3px_3px_0px_0px_#000] dark:shadow-[2.5px_2.5px_0px_0px_#fff] mb-5 sm:mb-6">
+                <Sparkles size={13} className="fill-black" />
                 <span>Autonomous WhatsApp Sales For Campus Bukkas</span>
               </div>
 
               {/* High-Impact Neo-Brutalist Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black tracking-tight text-gray-950 dark:text-white leading-[1.12]">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black tracking-tight text-gray-950 dark:text-white leading-[1.15]">
                 Stop missing orders. Let{' '}
-                <span className="relative inline-block px-2.5 py-0.5 mx-1 bg-[#2CD6EB] text-black border-3 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] -rotate-1">
+                <span className="relative inline-block px-2 sm:px-2.5 py-0.5 mx-0.5 sm:mx-1 bg-[#2CD6EB] text-black border-2 sm:border-3 border-black rounded-lg sm:rounded-xl shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] -rotate-1">
                   Auntie Chioma
                 </span>{' '}
                 handle your WhatsApp chats.
               </h1>
 
               {/* Body Text */}
-              <p className="mt-6 text-gray-800 dark:text-gray-300 text-lg md:text-xl max-w-2xl leading-relaxed font-medium">
+              <p className="mt-5 sm:mt-6 text-gray-800 dark:text-gray-300 text-base sm:text-lg md:text-xl max-w-2xl leading-relaxed font-medium">
                 Bukka AI turns your existing WhatsApp into an autonomous sales machine.
                 Accept customer orders in Pidgin or English, calculate totals instantly, and get paid
                 with <span className="font-bold underline decoration-wavy decoration-[#FA6131]">zero fake transfer anxiety</span>.
               </p>
 
               {/* Tactile CTAs */}
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <a
                   href="https://wa.me/2349060251750"
-                  className="inline-flex items-center justify-center gap-2 font-display font-extrabold text-lg uppercase tracking-wide bg-[#FA6131] hover:bg-[#ff7244] text-white px-8 py-3.5 rounded-xl border-3 border-black dark:border-white shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_#000] dark:hover:shadow-[2px_2px_0px_0px_#fff] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 font-display font-extrabold text-base sm:text-lg uppercase tracking-wide bg-[#FA6131] hover:bg-[#ff7244] text-white px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border-2 sm:border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
                 >
                   <span>Join the Beta</span>
-                  <ArrowRight size={20} className="stroke-[3]" />
+                  <ArrowRight size={18} className="stroke-[3]" />
                 </a>
                 <a
                   href="#how-it-works"
-                  className="inline-flex items-center justify-center font-display font-bold text-lg text-black dark:text-white bg-white dark:bg-[#1C2230] hover:bg-gray-100 dark:hover:bg-[#262C3A] px-8 py-3.5 rounded-xl border-3 border-black dark:border-white shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_#000] dark:hover:shadow-[2px_2px_0px_0px_#fff] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center font-display font-bold text-base sm:text-lg text-black dark:text-white bg-white dark:bg-[#1C2230] hover:bg-gray-100 dark:hover:bg-[#262C3A] px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border-2 sm:border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
                 >
                   See How It Works
                 </a>
               </div>
 
               {/* Neo-Brutalist Metrics & Proof Chips */}
-              <div className="mt-10 flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 border-black dark:border-white bg-white dark:bg-[#1C2230] text-black dark:text-white shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
-                  <Users size={18} className="text-[#FA6131] stroke-[2.5]" />
-                  <span className="font-display font-extrabold text-sm">120+ Active Bukkas</span>
+              <div className="mt-8 sm:mt-10 flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-black dark:border-white bg-white dark:bg-[#1C2230] text-black dark:text-white shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] dark:shadow-[1.5px_1.5px_0px_0px_#fff]">
+                  <Users size={16} className="text-[#FA6131] stroke-[2.5]" />
+                  <span className="font-display font-extrabold text-xs sm:text-sm">120+ Active Bukkas</span>
                 </div>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border-2 border-black dark:border-white bg-[#FFE600] text-black shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-black dark:border-white bg-[#FFE600] text-black shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000]">
                   <div className="flex items-center gap-0.5">
                     {Array.from({ length: 5 }).map((_, index) => (
-                      <Star key={`star-${index}`} size={14} className="text-black fill-black" />
+                      <Star key={`star-${index}`} size={13} className="text-black fill-black" />
                     ))}
                   </div>
-                  <span className="font-display font-black text-sm ml-1">4.9/5 Rating</span>
+                  <span className="font-display font-black text-xs sm:text-sm ml-0.5">4.9/5 Rating</span>
                 </div>
-                <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 border-black dark:border-white bg-[#2CD6EB] text-black shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
-                  <Clock size={18} className="stroke-[2.5]" />
-                  <span className="font-display font-extrabold text-sm">Avg 45s Order Time</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-black dark:border-white bg-[#2CD6EB] text-black shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000]">
+                  <Clock size={16} className="stroke-[2.5]" />
+                  <span className="font-display font-extrabold text-xs sm:text-sm">Avg 45s Order Time</span>
                 </div>
               </div>
             </div>
@@ -319,44 +319,124 @@ const LandingPage = () => {
       </div>
 
       {/* 2. How It Works Section */}
-      <section id="how-it-works" className="py-20 md:py-28 bg-[#FAF7EE] dark:bg-[#11141D] border-b-3 border-black dark:border-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+      <section id="how-it-works" className="py-14 sm:py-20 md:py-28 bg-[#FAF7EE] dark:bg-[#11141D] border-b-3 border-black dark:border-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
             <span className="inline-block px-3 py-1 rounded-md border-2 border-black dark:border-white bg-[#2CD6EB] text-black font-display font-black text-xs uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff] mb-3">
               THE 3-STEP FLOW
             </span>
-            <h2 className="text-3xl md:text-5xl font-display font-black tracking-tight text-gray-950 dark:text-white">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-black tracking-tight text-gray-950 dark:text-white">
               How Bukka AI Works
             </h2>
-            <p className="mt-4 text-gray-700 dark:text-gray-300 text-lg font-medium">
+            <p className="mt-4 text-gray-700 dark:text-gray-300 text-base sm:text-lg font-medium">
               From table scan to direct bank alert, Auntie Chioma handles every interaction smoothly with zero new apps or hardware.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {steps.map((step) => (
               <div
                 key={step.title}
-                className={`rounded-2xl border-3 border-black dark:border-white ${step.bgColor} p-7 shadow-[6px_6px_0px_0px_#000] dark:shadow-[6px_6px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 transition-all flex flex-col justify-between`}
+                className={`rounded-2xl border-3 border-black dark:border-white ${step.bgColor} p-6 sm:p-7 shadow-[4px_4px_0px_0px_#000] sm:shadow-[6px_6px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] sm:dark:shadow-[6px_6px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 transition-all flex flex-col justify-between`}
               >
                 <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className={`w-14 h-14 rounded-xl border-2 border-black ${step.iconBg} text-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000]`}>
-                      <step.icon size={28} className="stroke-[2.5]" />
+                  <div className="flex items-center justify-between mb-5 sm:mb-6">
+                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 border-black ${step.iconBg} text-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000]`}>
+                      <step.icon size={26} className="stroke-[2.5]" />
                     </div>
-                    <span className={`px-3 py-1 rounded-md border-2 border-black font-display font-black text-xs tracking-wider shadow-[2px_2px_0px_0px_#000] ${step.badgeBg}`}>
+                    <span className={`px-2.5 py-1 rounded-md border-2 border-black font-display font-black text-xs tracking-wider shadow-[1.5px_1.5px_0px_0px_#000] ${step.badgeBg}`}>
                       STEP {step.stepNumber}
                     </span>
                   </div>
-                  <h3 className="font-display font-black text-2xl text-black dark:text-white mb-3">
+                  <h3 className="font-display font-black text-xl sm:text-2xl text-black dark:text-white mb-2 sm:mb-3">
                     {step.title}
                   </h3>
-                  <p className="font-sans text-gray-800 dark:text-gray-300 font-medium leading-relaxed">
+                  <p className="font-sans text-gray-800 dark:text-gray-300 font-medium leading-relaxed text-sm sm:text-base">
                     {step.description}
                   </p>
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 2.5 Rock-Solid Financial Security & Paystack Settlement Strip */}
+      <section className="py-12 sm:py-16 bg-white dark:bg-[#151A24] border-b-3 border-black dark:border-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="rounded-2xl border-3 border-black dark:border-white bg-[#FAF7EE] dark:bg-[#1C2230] p-6 sm:p-10 shadow-[4px_4px_0px_0px_#000] sm:shadow-[6px_6px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#2CD6EB] sm:dark:shadow-[6px_6px_0px_0px_#2CD6EB]">
+            
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b-2 border-black/15 dark:border-white/15">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#25D366] text-black font-display font-black text-xs uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-3">
+                  <ShieldCheck size={14} className="stroke-[2.5]" />
+                  Bank-Grade Settlement Guarantee
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-display font-black text-gray-950 dark:text-white">
+                  Built to End Fake Transfer Panic Forever
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base font-medium mt-1.5 max-w-xl">
+                  Every food order is authenticated in real time through official CBN-licensed Paystack rails before printing to your kitchen.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-start md:self-auto bg-white dark:bg-[#11141D] border-2 border-black dark:border-white rounded-xl px-4 py-2.5 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
+                <span className="text-xs font-display font-extrabold uppercase text-gray-600 dark:text-gray-400">Powered by</span>
+                <span className="font-display font-black text-sm text-[#00C3F7] tracking-wider">Paystack</span>
+              </div>
+            </div>
+
+            {/* 4 Security Pillars */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6">
+              <div className="bg-white dark:bg-[#121620] border-2 border-black dark:border-white rounded-xl p-4 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
+                <div className="w-8 h-8 rounded-lg bg-[#BBF7D0] border-2 border-black text-black flex items-center justify-center font-black text-xs mb-2.5">
+                  01
+                </div>
+                <h4 className="font-display font-black text-sm text-gray-950 dark:text-white mb-1">
+                  Direct Bank Payouts
+                </h4>
+                <p className="text-xs text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
+                  Money routes directly to any commercial or fintech bank (Zenith, GTB, OPay, Moniepoint, Kuda).
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-[#121620] border-2 border-black dark:border-white rounded-xl p-4 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
+                <div className="w-8 h-8 rounded-lg bg-[#FEF08A] border-2 border-black text-black flex items-center justify-center font-black text-xs mb-2.5">
+                  02
+                </div>
+                <h4 className="font-display font-black text-sm text-gray-950 dark:text-white mb-1">
+                  Zero Fake Alerts
+                </h4>
+                <p className="text-xs text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
+                  Orders only generate when server webhooks confirm real funds. No fake screenshot trickery.
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-[#121620] border-2 border-black dark:border-white rounded-xl p-4 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
+                <div className="w-8 h-8 rounded-lg bg-[#BAE6FD] border-2 border-black text-black flex items-center justify-center font-black text-xs mb-2.5">
+                  03
+                </div>
+                <h4 className="font-display font-black text-sm text-gray-950 dark:text-white mb-1">
+                  Zero Holding of Cash
+                </h4>
+                <p className="text-xs text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
+                  You don't wait weeks for your payout. Automatic settlement on Paystack's verified cycle.
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-[#121620] border-2 border-black dark:border-white rounded-xl p-4 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
+                <div className="w-8 h-8 rounded-lg bg-[#FED7AA] border-2 border-black text-black flex items-center justify-center font-black text-xs mb-2.5">
+                  04
+                </div>
+                <h4 className="font-display font-black text-sm text-gray-950 dark:text-white mb-1">
+                  NDPA Data Compliance
+                </h4>
+                <p className="text-xs text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
+                  Full merchant data privacy and encrypted customer order history with complete audit receipts.
+                </p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
