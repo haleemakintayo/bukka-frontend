@@ -3,18 +3,22 @@ import { Link } from 'react-router-dom';
 import { Sun, Moon, Menu, X } from 'lucide-react';
 
 const LandingNavbar = () => {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('bukka_theme') === 'dark';
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('bukka_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('bukka_theme', 'light');
     }
   }, [isDarkMode]);
 
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  const toggleTheme = () => setIsDarkMode((prev) => !prev);
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   return (
