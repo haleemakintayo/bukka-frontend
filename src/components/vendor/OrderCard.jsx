@@ -19,10 +19,11 @@ const OrderCard = ({
 }) => {
   const orderId = order.order_number || order.order_id || order.id;
   const status = (order.status || '').toLowerCase();
-  const isPaidOrPending = ['paid', 'pending'].includes(status);
-  const isPreparing = status === 'preparing';
-  const isReady = status === 'ready';
-  const isDispatched = status === 'dispatched';
+  const isPaid = order.payment_status === 'PAID';
+  const isPaidOrPending = isPaid && ['paid', 'pending'].includes(status);
+  const isPreparing = isPaid && ['preparing', 'confirmed'].includes(status);
+  const isReady = isPaid && status === 'ready';
+  const isDispatched = isPaid && status === 'dispatched';
   const isDelivered = ['delivered', 'completed'].includes(status);
   const isRejectedOrCancelled = ['rejected', 'cancelled', 'abandoned'].includes(status);
   const isDelivery = (order.order_type || '').toLowerCase() === 'delivery';

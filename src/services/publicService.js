@@ -47,8 +47,12 @@ export const publicService = {
     return response.data;
   },
 
-  verifyOrderPayment: async (reference) => {
-    const response = await apiClient.post('/orders/verify', { reference });
+  verifyOrderPayment: async (reference, orderId = null) => {
+    const payload = { reference };
+    if (orderId !== null && orderId !== undefined) {
+      payload.order_id = orderId;
+    }
+    const response = await apiClient.post('/orders/verify', payload);
     return response.data;
   },
 

@@ -317,7 +317,7 @@ const VendorDashboard = () => {
 
       const [dashData, ordersData] = await Promise.all([
         vendorService.getDashboard(),
-        vendorService.getOrders({ limit: 20 }),
+        vendorService.getOrders({ limit: 20, payment_status: 'PAID' }),
       ]);
       setDashboard(dashData);
       setOrders(Array.isArray(ordersData) ? ordersData : []);
@@ -483,15 +483,19 @@ const VendorDashboard = () => {
     const idStr = String(o.order_number || o.order_id || o.id || '').toLowerCase();
     const custName = String(o.customer_name || '').toLowerCase();
 
+    if (statusFilter !== 'REJECTED' && o.payment_status !== 'PAID') {
+      return false;
+    }
+
     // Status tab filter
     if (statusFilter === 'PENDING') {
-      if (['ready', 'completed', 'delivered', 'rejected', 'cancelled'].includes(st)) return false;
+      if (['ready', 'completed', 'delivered', 'rejected', 'cancelled', 'abandoned'].includes(st)) return false;
     } else if (statusFilter === 'READY') {
       if (st !== 'ready') return false;
     } else if (statusFilter === 'COMPLETED') {
       if (!['completed', 'delivered'].includes(st)) return false;
     } else if (statusFilter === 'REJECTED') {
-      if (!['rejected', 'cancelled'].includes(st)) return false;
+      if (!['rejected', 'cancelled', 'abandoned'].includes(st)) return false;
     }
 
     // Search query
@@ -669,12 +673,13 @@ const VendorDashboard = () => {
             {filteredOrders.map((order) => {
               const orderId = order.order_id || order.id;
               const st = (order.status || '').toLowerCase();
-              const isPaidOrPending = ['pending', 'paid', 'confirmed', 'received', ''].includes(st);
-              const isPreparing = st === 'preparing' || st === 'cooking';
-              const isReady = st === 'ready';
+              const isPaid = order.payment_status === 'PAID';
+              const isPaidOrPending = isPaid && ['pending', 'paid', 'received', ''].includes(st);
+              const isPreparing = isPaid && ['preparing', 'confirmed', 'cooking'].includes(st);
+              const isReady = isPaid && st === 'ready';
               const isDelivery = (order.order_type || '').toLowerCase() === 'delivery';
-              const isDispatched = st === 'dispatched' || st === 'out_for_delivery';
-              const isRejectActionable = !['rejected', 'refunded', 'cancelled', 'completed', 'delivered'].includes(st);
+              const isDispatched = isPaid && (st === 'dispatched' || st === 'out_for_delivery');
+              const isRejectActionable = !['rejected', 'refunded', 'cancelled', 'completed', 'delivered', 'abandoned'].includes(st);
               const isActionExecuting = actionLoadingId === orderId;
 
               return (

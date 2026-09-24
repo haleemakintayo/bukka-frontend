@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { usePaystackPayment } from 'react-paystack';
@@ -34,6 +34,9 @@ const Checkout = () => {
   const [selectedAreaId, setSelectedAreaId] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
 
+  const [paymentRef] = useState(() => `bukka_web_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+  const createdOrderRef = useRef(null);
+
   const vendorSlug = cartItems[0]?.vendorSlug;
 
   React.useEffect(() => {
@@ -58,13 +61,13 @@ const Checkout = () => {
   const CONVENIENCE_FEE = 50;
   const finalTotal = cartTotal + CONVENIENCE_FEE + (orderType === 'delivery' ? deliveryFee : 0);
 
-  // Placeholder key as requested
   const config = {
-    reference: (new Date()).getTime().toString(),
+    reference: paymentRef,
     email: "student@oou.edu.ng", // Paystack requires email, we use a dummy one
     amount: finalTotal * 100, // Paystack amount is in kobo
-    publicKey: "pk_test_PLACEHOLDER_KEY",
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_PLACEHOLDER_KEY",
     metadata: {
+      order_id: createdOrderRef.current?.order_id,
       custom_fields: [
         {
           display_name: "WhatsApp Number",
@@ -79,11 +82,15 @@ const Checkout = () => {
 
   const onSuccess = async (reference) => {
     try {
+      const txRef = reference?.reference || paymentRef;
+      const createdOrderId = createdOrderRef.current?.order_id || null;
       // Verify payment with backend
-      await publicService.verifyOrderPayment(reference.reference);
+      const verified = await publicService.verifyOrderPayment(txRef, createdOrderId);
       
       const receiptData = {
-        reference: reference.reference,
+        reference: txRef,
+        orderId: verified?.order_id || createdOrderId,
+        orderNumber: verified?.order_number || createdOrderRef.current?.order_number,
         items: cartItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
         subtotal: cartTotal,
         convenienceFee: CONVENIENCE_FEE,
@@ -99,22 +106,9 @@ const Checkout = () => {
       navigate('/success', { state: receiptData });
     } catch (err) {
       console.error('Order verification failed:', err);
-      // Still allow success for demo - in production you'd handle this
-      const receiptFallback = {
-        reference: reference.reference,
-        items: cartItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
-        subtotal: cartTotal,
-        convenienceFee: CONVENIENCE_FEE,
-        deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
-        total: finalTotal,
-        orderType,
-        vendorSlug: cartItems[0]?.vendorSlug,
-        vendorName: cartItems[0]?.vendorName || cartItems[0]?.vendorSlug,
-        customerName: customerName || null,
-        timestamp: new Date().toISOString(),
-      };
-      clearCart();
-      navigate('/success', { state: receiptFallback });
+      const txRef = reference?.reference || paymentRef;
+      const errDetail = err.response?.data?.detail || err.response?.data?.message || 'Could not verify payment with server.';
+      alert(`Payment verification failed (Ref: ${txRef}): ${errDetail}. Please keep your reference and contact support if you were debited.`);
     }
     setIsProcessing(false);
   };
@@ -156,8 +150,8 @@ const Checkout = () => {
       const normalizedWhatsapp = formatWhatsappNumber(whatsappNumber);
       const notes = [orderNotes.trim(), `WhatsApp: ${normalizedWhatsapp}`].filter(Boolean).join(' | ');
 
-      // Create order on backend first
-      await publicService.createOrder({
+      // Create order on backend first with matching payment_reference
+      const createdOrder = await publicService.createOrder({
         vendor_slug: cartItems[0]?.vendorSlug,
         items: cartItems.map(item => ({
           menu_item_id: item.id,
@@ -171,7 +165,9 @@ const Checkout = () => {
         delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : 'Store Pickup',
         notes: notes,
         delivery_note: orderNotes.trim() || null,
+        payment_reference: paymentRef,
       });
+      createdOrderRef.current = createdOrder;
 
       // Initialize payment
       initializePayment(onSuccess, onClose);

@@ -70,7 +70,7 @@ const VendorOrdersFulfillment = () => {
 
       const [boardRes, listRes, sumRes] = await Promise.all([
         vendorService.getOrdersBoard(),
-        vendorService.getOrders({ limit: 100 }),
+        vendorService.getOrders({ limit: 100, payment_status: 'PAID' }),
         vendorService.getOrdersSummary(),
       ]);
 
@@ -235,20 +235,21 @@ const VendorOrdersFulfillment = () => {
     const custName = String(o.customer_name || '').toLowerCase();
     const custPhone = String(o.customer_phone || '').toLowerCase();
     const orderType = (o.order_type || 'pickup').toLowerCase();
+    const isPaid = o.payment_status === 'PAID';
 
     // Tab filtering
     if (statusTab === 'ACTIVE') {
-      if (['completed', 'delivered', 'rejected', 'cancelled', 'abandoned'].includes(st)) return false;
+      if (!isPaid || ['completed', 'delivered', 'rejected', 'cancelled', 'abandoned'].includes(st)) return false;
     } else if (statusTab === 'NEW') {
-      if (o.payment_status !== 'PAID' || !['paid', 'pending'].includes(st)) return false;
+      if (!isPaid || !['paid', 'pending'].includes(st)) return false;
     } else if (statusTab === 'PREPARING') {
-      if (!['preparing', 'confirmed'].includes(st)) return false;
+      if (!isPaid || !['preparing', 'confirmed'].includes(st)) return false;
     } else if (statusTab === 'READY') {
-      if (st !== 'ready') return false;
+      if (!isPaid || st !== 'ready') return false;
     } else if (statusTab === 'DISPATCHED') {
-      if (st !== 'dispatched') return false;
+      if (!isPaid || st !== 'dispatched') return false;
     } else if (statusTab === 'COMPLETED') {
-      if (!['completed', 'delivered'].includes(st)) return false;
+      if (!isPaid || !['completed', 'delivered'].includes(st)) return false;
     } else if (statusTab === 'CANCELLED') {
       if (!['rejected', 'cancelled', 'abandoned'].includes(st)) return false;
     }

@@ -65,10 +65,11 @@ const OrderDetailDrawer = ({
   };
 
   const status = (order?.status || '').toLowerCase();
-  const isPaidOrPending = ['paid', 'pending'].includes(status);
-  const isPreparing = status === 'preparing';
-  const isReady = status === 'ready';
-  const isDispatched = status === 'dispatched';
+  const isPaid = order?.payment_status === 'PAID';
+  const isPaidOrPending = isPaid && ['paid', 'pending'].includes(status);
+  const isPreparing = isPaid && ['preparing', 'confirmed'].includes(status);
+  const isReady = isPaid && status === 'ready';
+  const isDispatched = isPaid && status === 'dispatched';
   const isDelivered = ['delivered', 'completed'].includes(status);
   const isRejectedOrCancelled = ['rejected', 'cancelled', 'abandoned'].includes(status);
   const isDelivery = (order?.order_type || '').toLowerCase() === 'delivery';
@@ -166,8 +167,12 @@ const OrderDetailDrawer = ({
                   <p className="text-lg font-extrabold">
                     {formatMoney(order.total_amount || order.total_price)}
                   </p>
-                  <p className="text-[10px] text-gray-400 uppercase font-bold">
-                    {order.payment_status || 'PAID'}
+                  <p
+                    className={`text-[10px] uppercase font-bold ${
+                      isPaid ? 'text-emerald-400' : 'text-amber-400'
+                    }`}
+                  >
+                    {order.payment_status || 'PENDING'}
                   </p>
                 </div>
               </div>
