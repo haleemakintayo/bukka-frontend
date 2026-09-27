@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   X, Clock, Phone, MapPin, CreditCard, ChefHat, Truck,
   CheckCircle2, AlertCircle, Ban, Printer, MessageSquare,
-  Loader2, ExternalLink
+  Loader2, ExternalLink, Copy, Check, ShieldCheck
 } from 'lucide-react';
 import { vendorService } from '../../services/vendorService';
 import { getApiErrorMessage } from '../../services/api';
@@ -22,6 +22,7 @@ const OrderDetailDrawer = ({
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [copiedRef, setCopiedRef] = useState(false);
 
   useEffect(() => {
     if (isOpen && orderId) {
@@ -29,6 +30,7 @@ const OrderDetailDrawer = ({
     } else {
       setOrder(null);
       setError(null);
+      setCopiedRef(false);
     }
   }, [isOpen, orderId]);
 
@@ -64,6 +66,13 @@ const OrderDetailDrawer = ({
     });
   };
 
+  const handleCopyRef = (refText) => {
+    if (!refText) return;
+    navigator.clipboard?.writeText(refText);
+    setCopiedRef(true);
+    setTimeout(() => setCopiedRef(false), 2500);
+  };
+
   const status = (order?.status || '').toLowerCase();
   const isPaid = order?.payment_status === 'PAID';
   const isPaidOrPending = isPaid && ['paid', 'pending'].includes(status);
@@ -90,10 +99,15 @@ const OrderDetailDrawer = ({
       <div className="relative w-full max-w-lg bg-[#131722] border-l border-white/10 h-full shadow-2xl z-10 flex flex-col animate-in slide-in-from-right duration-200 text-white overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#171B26] shrink-0">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <span className="font-mono text-base font-extrabold text-[#2CD6EB]">
-              #{String(order?.order_number || orderId).toUpperCase()}
+              #{String(order?.order_id || orderId)}
             </span>
+            {order?.order_number && (
+              <span className="font-mono text-xs font-bold text-gray-400 bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
+                {order.order_number}
+              </span>
+            )}
             {order && (
               <span
                 className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
@@ -174,6 +188,61 @@ const OrderDetailDrawer = ({
                   >
                     {order.payment_status || 'PENDING'}
                   </p>
+                </div>
+              </div>
+
+              {/* Paystack Payment Verification & Dispute Resolution Card */}
+              <div className="bg-[#171B26] border border-white/10 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <ShieldCheck size={14} className={isPaid ? 'text-emerald-400' : 'text-amber-400'} />
+                    Paystack Verification Record
+                  </p>
+                  <span
+                    className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                      isPaid
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    }`}
+                  >
+                    {isPaid ? '✓ Verified Paid' : order.payment_status || 'Unverified / Pending'}
+                  </span>
+                </div>
+
+                <div className="bg-[#0f1118] border border-white/10 rounded-xl p-3 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                      Paystack Reference
+                    </p>
+                    <p className="text-xs font-mono font-bold text-[#2CD6EB] truncate mt-0.5">
+                      {order.payment_reference || 'No Paystack reference recorded'}
+                    </p>
+                  </div>
+                  {order.payment_reference && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyRef(order.payment_reference)}
+                      className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-300 hover:text-white flex items-center gap-1 shrink-0 transition-colors"
+                      title="Copy Paystack Reference"
+                    >
+                      {copiedRef ? (
+                        <>
+                          <Check size={12} className="text-emerald-400" />
+                          <span className="text-emerald-400">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={12} />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1">
+                  <span>Order ID: <strong className="text-white font-mono">#{order.order_id}</strong></span>
+                  <span>Timestamp: <strong className="text-white">{formatDateTime(order.created_at)}</strong></span>
                 </div>
               </div>
 

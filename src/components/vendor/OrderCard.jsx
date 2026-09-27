@@ -17,9 +17,10 @@ const OrderCard = ({
   isActionExecuting = false,
   layout = 'card', // 'card' | 'kanban'
 }) => {
-  const orderId = order.order_number || order.order_id || order.id;
+  const numericOrderId = order.order_id || order.id;
+  const orderId = numericOrderId || order.order_number;
   const status = (order.status || '').toLowerCase();
-  const isPaid = order.payment_status === 'PAID';
+  const isPaid = (order.payment_status || '').toUpperCase() === 'PAID';
   const isPaidOrPending = isPaid && ['paid', 'pending'].includes(status);
   const isPreparing = isPaid && ['preparing', 'confirmed'].includes(status);
   const isReady = isPaid && status === 'ready';
@@ -72,10 +73,15 @@ const OrderCard = ({
           )}
 
           <div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-mono text-sm font-extrabold text-[#2CD6EB]">
-                #{String(orderId).toUpperCase()}
+                #{String(numericOrderId || orderId).toUpperCase()}
               </span>
+              {order.order_number && (
+                <span className="font-mono text-[10px] font-bold text-gray-400">
+                  {order.order_number}
+                </span>
+              )}
               <span
                 className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
                   isDelivery
@@ -89,6 +95,11 @@ const OrderCard = ({
             <p className="text-xs font-extrabold text-white mt-0.5 truncate max-w-[140px] md:max-w-[180px]">
               {order.customer_name || 'Customer'}
             </p>
+            {order.payment_reference && (
+              <p className="text-[10px] font-mono text-emerald-400/90 mt-0.5 truncate max-w-[170px]" title={`Paystack Ref: ${order.payment_reference}`}>
+                ✓ Ref: {order.payment_reference}
+              </p>
+            )}
           </div>
         </div>
 

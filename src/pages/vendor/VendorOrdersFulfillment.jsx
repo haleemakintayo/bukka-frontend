@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Loader2, ShoppingBag, Clock, CheckCircle2, XCircle, AlertTriangle,
   X, MapPin, Phone, RefreshCw, Ban, Search, Truck, Store, Flame,
-  Volume2, VolumeX, LayoutGrid, List, ChefHat, CheckSquare, Filter
+  Volume2, VolumeX, LayoutGrid, List, ChefHat, CheckSquare, Filter,
+  FileText, Copy, Check, ShieldCheck
 } from 'lucide-react';
 import { vendorService } from '../../services/vendorService';
 import { getApiErrorMessage } from '../../services/api';
@@ -16,7 +17,7 @@ import OrderDetailDrawer from '../../components/vendor/OrderDetailDrawer';
 import BatchActionBar from '../../components/vendor/BatchActionBar';
 
 const VendorOrdersFulfillment = () => {
-  const [viewMode, setViewMode] = useState('board'); // 'board' (Kanban) | 'list'
+  const [viewMode, setViewMode] = useState('board'); // 'board' (Kanban) | 'list' | 'archive'
   const [boardData, setBoardData] = useState({
     new_paid: [],
     preparing: [],
@@ -31,6 +32,15 @@ const VendorOrdersFulfillment = () => {
     ready_count: 0,
     latest_order_id: 0,
   });
+
+  // Order History Archive (Dispute Resolution) state
+  const [archiveOrders, setArchiveOrders] = useState([]);
+  const [archiveTotal, setArchiveTotal] = useState(0);
+  const [archivePage, setArchivePage] = useState(1);
+  const [archiveTotalPages, setArchiveTotalPages] = useState(1);
+  const [archivePaymentFilter, setArchivePaymentFilter] = useState('PAID'); // 'PAID' | 'ALL' | 'PENDING'
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -227,13 +237,79 @@ const VendorOrdersFulfillment = () => {
     }
   };
 
+  // ── Order History Archive Fetcher (Server-side Dispute Resolution) ────────
+  const fetchArchiveOrders = useCallback(async () => {
+    setArchiveLoading(true);
+    try {
+      const params = {
+        page: archivePage,
+        limit: 25,
+        order_type: orderTypeFilter !== 'all' ? orderTypeFilter : undefined,
+        search: searchQuery.trim() || undefined,
+      };
+      if (archivePaymentFilter === 'ALL') {
+        params.payment_status = 'ALL';
+        params.include_unpaid = true;
+      } else if (archivePaymentFilter === 'PENDING') {
+        params.payment_status = 'PENDING';
+        params.include_unpaid = true;
+      } else {
+        params.payment_status = 'PAID';
+      }
+
+      const res = await vendorService.getOrdersPaginated(params);
+      setArchiveOrders(Array.isArray(res?.items) ? res.items : []);
+      setArchiveTotal(res?.total || 0);
+      setArchiveTotalPages(res?.total_pages || 1);
+    } catch (err) {
+      showToast('error', getApiErrorMessage(err, 'Failed to search order archive.'));
+    } finally {
+      setArchiveLoading(false);
+    }
+  }, [archivePage, archivePaymentFilter, orderTypeFilter, searchQuery]);
+
+  useEffect(() => {
+    if (viewMode !== 'archive') return;
+    const timer = setTimeout(() => {
+      fetchArchiveOrders();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [viewMode, fetchArchiveOrders]);
+
+  const handleCopyRef = (ref, e) => {
+    if (e) e.stopPropagation();
+    if (!ref) return;
+    navigator.clipboard?.writeText(ref);
+    setCopiedRef(ref);
+    setTimeout(() => setCopiedRef(null), 2000);
+  };
+
+  const formatMoney = (amount) =>
+    new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
+
+  const formatDateTime = (iso) => {
+    if (!iso) return '';
+    return new Date(iso).toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   // ── Filtering for List View ───────────────────────────────────────────────
 
   const filteredOrders = orders.filter((o) => {
     const st = (o.status || '').toLowerCase();
-    const idStr = String(o.order_number || o.order_id || o.id || '').toLowerCase();
+    const numericIdStr = String(o.order_id || o.id || '').toLowerCase();
+    const orderNumStr = String(o.order_number || '').toLowerCase();
     const custName = String(o.customer_name || '').toLowerCase();
     const custPhone = String(o.customer_phone || '').toLowerCase();
+    const payRef = String(o.payment_reference || '').toLowerCase();
     const orderType = (o.order_type || 'pickup').toLowerCase();
     const isPaid = o.payment_status === 'PAID';
 
@@ -259,10 +335,16 @@ const VendorOrdersFulfillment = () => {
       return false;
     }
 
-    // Search query
+    // Search query (matches numeric ID e.g. 1082, order_number, phone, customer name, or Paystack ref)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      return idStr.includes(q) || custName.includes(q) || custPhone.includes(q);
+      const q = searchQuery.toLowerCase().trim().replace(/^#/, '');
+      return (
+        numericIdStr.includes(q) ||
+        orderNumStr.includes(q) ||
+        custName.includes(q) ||
+        custPhone.includes(q) ||
+        payRef.includes(q)
+      );
     }
 
     return true;
@@ -308,7 +390,7 @@ const VendorOrdersFulfillment = () => {
               )}
             </h1>
             <p className="text-xs text-gray-400 mt-0.5">
-              Live workflow board, fast kitchen actions & customer automated updates
+              Live workflow board, fast kitchen actions & searchable Order History Archive
             </p>
           </div>
         </div>
@@ -348,7 +430,7 @@ const VendorOrdersFulfillment = () => {
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
 
-          {/* View Mode Toggle: Kanban Board vs Queue List */}
+          {/* View Mode Toggle: Kanban Board vs Queue List vs Order Archive */}
           <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1">
             <button
               onClick={() => setViewMode('board')}
@@ -372,16 +454,31 @@ const VendorOrdersFulfillment = () => {
               <List size={14} />
               <span className="hidden sm:inline">List</span>
             </button>
+            <button
+              onClick={() => {
+                setViewMode('archive');
+                setArchivePage(1);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                viewMode === 'archive'
+                  ? 'bg-[#2CD6EB] text-[#0F121C] shadow-md'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+              title="Order History Archive & Dispute Lookup"
+            >
+              <FileText size={14} />
+              <span>Archive</span>
+            </button>
           </div>
 
           {/* Manual Refresh Button */}
           <button
-            onClick={() => fetchAllData(true)}
-            disabled={refreshing}
+            onClick={() => (viewMode === 'archive' ? fetchArchiveOrders() : fetchAllData(true))}
+            disabled={refreshing || archiveLoading}
             className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white transition-all disabled:opacity-50"
             title="Refresh now"
           >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin text-[#FA6131]' : ''} />
+            <RefreshCw size={16} className={refreshing || archiveLoading ? 'animate-spin text-[#FA6131]' : ''} />
           </button>
         </div>
       </div>
@@ -484,13 +581,19 @@ const VendorOrdersFulfillment = () => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Order ID (#), customer name, or phone…"
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (viewMode === 'archive') setArchivePage(1);
+            }}
+            placeholder="Search by Order ID (e.g. 1082 or #1082), customer phone, name, or Paystack ref…"
             className="w-full bg-[#171B26] border border-white/10 rounded-2xl pl-11 pr-10 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FA6131]/50 transition-colors shadow-inner"
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                if (viewMode === 'archive') setArchivePage(1);
+              }}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
             >
               <X size={14} />
@@ -507,7 +610,10 @@ const VendorOrdersFulfillment = () => {
           ].map((type) => (
             <button
               key={type.id}
-              onClick={() => setOrderTypeFilter(type.id)}
+              onClick={() => {
+                setOrderTypeFilter(type.id);
+                if (viewMode === 'archive') setArchivePage(1);
+              }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 orderTypeFilter === type.id
                   ? 'bg-white/15 text-white shadow-sm'
@@ -685,6 +791,215 @@ const VendorOrdersFulfillment = () => {
               )}
             </div>
           </div>
+        </div>
+      ) : viewMode === 'archive' ? (
+        /* ── VIEW MODE 3: ORDER HISTORY ARCHIVE & DISPUTE RESOLUTION ────── */
+        <div className="space-y-4">
+          {/* Archive Dispute Resolution Banner & Payment Filters */}
+          <div className="bg-[#171B26] border border-white/10 rounded-3xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shrink-0">
+                <ShieldCheck size={20} className="text-emerald-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-extrabold text-white">
+                    Order History Archive & Dispute Verification
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full bg-white/10 text-gray-300 text-[10px] font-bold">
+                    {archiveTotal} {archiveTotal === 1 ? 'record' : 'records'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Search any Order ID (e.g. <span className="text-white font-mono">1082</span>), customer phone number, or Paystack reference to verify payment claims and timestamps.
+                </p>
+              </div>
+            </div>
+
+            {/* Payment Verification Filter */}
+            <div className="flex items-center gap-1.5 bg-[#0F1219] border border-white/10 rounded-2xl p-1.5 self-start lg:self-auto">
+              {[
+                { id: 'paid', label: '✓ Verified Paid' },
+                { id: 'all', label: 'All / Disputed' },
+                { id: 'pending', label: '⏳ Unpaid / Pending' },
+              ].map((pf) => (
+                <button
+                  key={pf.id}
+                  onClick={() => {
+                    setArchivePaymentFilter(pf.id);
+                    setArchivePage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    archivePaymentFilter === pf.id
+                      ? 'bg-[#FA6131] text-white shadow-sm'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {pf.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {archiveLoading ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-3">
+              <Loader2 size={32} className="animate-spin text-[#FA6131]" />
+              <p className="text-xs text-gray-500 font-medium">Searching order archive…</p>
+            </div>
+          ) : archiveOrders.length === 0 ? (
+            <div className="text-center py-16 bg-[#171B26] border border-white/5 rounded-3xl space-y-2">
+              <Archive size={28} className="mx-auto text-gray-600" />
+              <p className="text-gray-300 font-bold text-sm">
+                No matching orders found in archive.
+              </p>
+              <p className="text-gray-500 text-xs max-w-md mx-auto">
+                Try searching by numeric Order ID (e.g. 1082), customer phone number (e.g. 0803...), or switch the filter to &ldquo;All / Disputed&rdquo; to check unpaid attempts.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {archiveOrders.map((order) => {
+                const oid = order.order_id || order.id;
+                const isPaid = (order.payment_status || '').toLowerCase() === 'paid';
+                const payRef = order.payment_reference || '';
+                const createdDate = order.created_at ? new Date(order.created_at) : null;
+                return (
+                  <div
+                    key={oid}
+                    className="bg-[#171B26] border border-white/10 hover:border-white/20 rounded-2xl p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-[#FA6131]/15 border border-[#FA6131]/30 text-[#FA6131] font-mono text-xs font-extrabold">
+                          #{oid}
+                        </span>
+                        {order.order_number && (
+                          <span className="text-xs font-mono font-bold text-gray-300">
+                            {order.order_number}
+                          </span>
+                        )}
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
+                            isPaid
+                              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                              : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                          }`}
+                        >
+                          {isPaid ? '✓ Paystack Verified' : `⚠ ${order.payment_status || 'Unpaid'}`}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[10px] font-bold uppercase">
+                          {order.status}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-wrap text-xs text-gray-300">
+                        <span className="font-bold text-white">
+                          {order.customer_name || 'Customer'}
+                        </span>
+                        {order.customer_phone && (
+                          <span className="font-mono text-gray-400">
+                            📞 {order.customer_phone}
+                          </span>
+                        )}
+                        {createdDate && (
+                          <span className="text-gray-400">
+                            🕒{' '}
+                            {createdDate.toLocaleTimeString('en-NG', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}{' '}
+                            ·{' '}
+                            {createdDate.toLocaleDateString('en-NG', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Paystack Reference Pill */}
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
+                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                          Paystack Ref:
+                        </span>
+                        {payRef ? (
+                          <div className="inline-flex items-center gap-1.5 bg-[#0F1219] border border-emerald-500/25 rounded-lg px-2.5 py-1">
+                            <span className="font-mono text-xs text-emerald-300 font-bold select-all">
+                              {payRef}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyPaymentRef(payRef)}
+                              className="text-gray-400 hover:text-white p-0.5 rounded transition-colors"
+                              title="Copy Paystack reference"
+                            >
+                              {copiedRef === payRef ? (
+                                <Check size={12} className="text-emerald-400" />
+                              ) : (
+                                <Copy size={12} />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs italic text-gray-500">
+                            No verified Paystack reference recorded
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between md:justify-end gap-4 pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
+                      <div className="text-left md:text-right">
+                        <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                          Total Amount
+                        </p>
+                        <p className="text-base font-extrabold text-white font-mono">
+                          ₦{Number(order.total_amount || 0).toLocaleString()}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDetailOrderId(oid)}
+                        className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white transition-colors"
+                      >
+                        View Receipt
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Pagination Controls */}
+              {archiveTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-3">
+                  <p className="text-xs text-gray-500">
+                    Page <span className="text-white font-bold">{archivePage}</span> of{' '}
+                    <span className="text-white font-bold">{archiveTotalPages}</span>
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={archivePage <= 1}
+                      onClick={() => setArchivePage((p) => Math.max(1, p - 1))}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#171B26] border border-white/10 text-xs font-bold text-white disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      disabled={archivePage >= archiveTotalPages}
+                      onClick={() => setArchivePage((p) => Math.min(archiveTotalPages, p + 1))}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#171B26] border border-white/10 text-xs font-bold text-white disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         /* ── VIEW MODE 2: QUEUE LIST ─────────────────────────────────────── */

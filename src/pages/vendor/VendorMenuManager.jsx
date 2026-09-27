@@ -260,7 +260,21 @@ const EditItemModal = ({ item, onClose, onSuccess, showToast }) => {
       if (form.reorder_level !== '') payload.reorder_level = Number(form.reorder_level);
       if (form.description.trim()) payload.description = form.description.trim();
 
-      await vendorService.updateMenuV2Item(item.id, payload);
+      try {
+        await vendorService.updateMenuV2Item(item.id, payload);
+      } catch (v2Err) {
+        if (v2Err?.response?.status === 404) {
+          await vendorService.updateMenuItem(item.id, {
+            name: payload.name,
+            price: payload.price,
+            category: payload.category,
+            description: payload.description,
+            is_available: payload.is_available,
+          });
+        } else {
+          throw v2Err;
+        }
+      }
       showToast('success', `"${form.name.trim()}" updated! ✏️`);
       onSuccess();
       onClose();
@@ -380,6 +394,10 @@ const VendorMenuManager = () => {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [updatingId, setUpdatingId] = useState(null);
 
+  const [containerCost, setContainerCost] = useState(0);
+  const [customContainerCost, setCustomContainerCost] = useState('');
+  const [savingContainerCost, setSavingContainerCost] = useState(false);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
@@ -407,7 +425,21 @@ const VendorMenuManager = () => {
       } catch {
         data = await vendorService.getMenu();
       }
-      setItems(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setItems(list);
+
+      try {
+        const settingsData = await vendorService.getStoreSettings();
+        if (settingsData && typeof settingsData.container_cost === 'number') {
+          setContainerCost(settingsData.container_cost);
+          setCustomContainerCost(String(settingsData.container_cost));
+        }
+      } catch {
+        const compItem = list.find((i) => i.is_compulsory && i.is_available);
+        const derived = compItem ? Number(compItem.price || 0) : 0;
+        setContainerCost(derived);
+        setCustomContainerCost(String(derived));
+      }
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load menu items.'));
     } finally {
@@ -419,12 +451,43 @@ const VendorMenuManager = () => {
     fetchMenu();
   }, [fetchMenu]);
 
+  const handleSaveContainerCost = async (targetAmount) => {
+    const parsed = Number(targetAmount);
+    if (Number.isNaN(parsed) || parsed < 0) return;
+
+    setSavingContainerCost(true);
+    try {
+      const updated = await vendorService.updateStoreSettings({ container_cost: parsed });
+      setContainerCost(updated.container_cost);
+      setCustomContainerCost(String(updated.container_cost));
+      await fetchMenu();
+      showToast(
+        'success',
+        parsed > 0
+          ? `Global Takeaway Pack cost set to ₦${parsed.toLocaleString()} (Auto-injected into Flow Screen 2) 📦`
+          : 'Global Takeaway Pack fee disabled.'
+      );
+    } catch (err) {
+      showToast('error', getApiErrorMessage(err, 'Failed to update global container cost.'));
+    } finally {
+      setSavingContainerCost(false);
+    }
+  };
+
   // Instant Stock Toggle
   const handleToggleAvailability = async (item) => {
     setUpdatingId(item.id);
     const newStatus = !item.is_available;
     try {
-      await vendorService.updateMenuV2Item(item.id, { is_available: newStatus });
+      try {
+        await vendorService.updateMenuV2Item(item.id, { is_available: newStatus });
+      } catch (v2Err) {
+        if (v2Err?.response?.status === 404) {
+          await vendorService.updateMenuItem(item.id, { is_available: newStatus });
+        } else {
+          throw v2Err;
+        }
+      }
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, is_available: newStatus } : i))
       );
@@ -478,6 +541,75 @@ const VendorMenuManager = () => {
         >
           <Plus size={16} /> Add Menu Item
         </button>
+      </div>
+
+      {/* Global Container Cost (Takeaway Pack) Quick Config Card */}
+      <div className="bg-[#171B26] border border-[#2CD6EB]/20 rounded-3xl p-5 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#2CD6EB]/10 border border-[#2CD6EB]/25 flex items-center justify-center text-[#2CD6EB] shrink-0">
+              <Box size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm md:text-base font-extrabold text-white">
+                  Global Container Cost (Takeaway Pack)
+                </h3>
+                <span className="text-[10px] font-extrabold text-[#2CD6EB] bg-[#2CD6EB]/10 border border-[#2CD6EB]/25 px-2.5 py-0.5 rounded-full uppercase">
+                  {containerCost > 0 ? `Active: ${formatMoney(containerCost)} / pack` : 'Disabled (₦0)'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Automatically injected into WhatsApp Flow Screen 2 and customer checkout.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+          {/* Quick Presets */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[0, 150, 200, 300, 500].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                disabled={savingContainerCost}
+                onClick={() => handleSaveContainerCost(preset)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                  containerCost === preset
+                    ? 'bg-[#2CD6EB]/20 border-[#2CD6EB]/50 text-[#2CD6EB] shadow-sm'
+                    : 'bg-white/[0.03] border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+                }`}
+              >
+                {preset === 0 ? '₦0 (Off)' : `₦${preset}`}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Amount Input */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 sm:w-36">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">₦</span>
+              <input
+                type="number"
+                min="0"
+                value={customContainerCost}
+                onChange={(e) => setCustomContainerCost(e.target.value)}
+                placeholder="200"
+                className="w-full bg-[#0f1118] border border-white/10 rounded-xl pl-7 pr-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-[#2CD6EB]"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={savingContainerCost || customContainerCost === ''}
+              onClick={() => handleSaveContainerCost(customContainerCost)}
+              className="px-4 py-2 rounded-xl bg-[#2CD6EB] hover:bg-[#22bdd1] text-[#0f1118] text-xs font-extrabold transition-all flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+            >
+              {savingContainerCost ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              Set Pack Fee
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Search & Categories */}

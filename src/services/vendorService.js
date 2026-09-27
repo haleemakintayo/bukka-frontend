@@ -12,6 +12,24 @@ export const vendorService = {
     return response.data;
   },
 
+  /** GET /vendors/me/settlement/today — live tally of verified Paystack transactions awaiting EOD transfer */
+  getTodaySettlement: async () => {
+    const response = await apiClient.get('/vendors/me/settlement/today');
+    return response.data;
+  },
+
+  /** GET /vendors/me/settings — notification phone number, operating hours, global container cost */
+  getStoreSettings: async () => {
+    const response = await apiClient.get('/vendors/me/settings');
+    return response.data;
+  },
+
+  /** PATCH /vendors/me/settings — update notification phone number, operating hours, or global container cost */
+  updateStoreSettings: async (payload) => {
+    const response = await apiClient.patch('/vendors/me/settings', payload);
+    return response.data;
+  },
+
   // ── Order Management & Fulfillment Endpoints ──────────────────────────────
 
   /**

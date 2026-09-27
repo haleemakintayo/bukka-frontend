@@ -6,7 +6,8 @@ import {
   Loader2, TrendingUp, ShoppingBag, Clock, LayoutList,
   Wallet, Package, Power, PauseCircle, CheckCircle2, XCircle, AlertTriangle,
   X, MapPin, Phone, CreditCard, FileText, ChevronRight, Eye, Truck, Store,
-  Search, Ban, RefreshCw, Filter, Check, ChefHat
+  Search, Ban, RefreshCw, Filter, Check, ChefHat, ShieldCheck, Copy,
+  Settings, Bell, Archive
 } from 'lucide-react';
 
 import OrderDetailDrawer from '../../components/vendor/OrderDetailDrawer';
@@ -17,7 +18,7 @@ import RejectOrderModal from '../../components/vendor/RejectOrderModal';
 // ─────────────────────────────────────────────
 // Store Status Widget
 // ─────────────────────────────────────────────
-const StoreStatusWidget = () => {
+const StoreStatusWidget = ({ externalRefreshKey = 0 }) => {
   const [availability, setAvailability] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -47,7 +48,7 @@ const StoreStatusWidget = () => {
     // Refresh countdown every 30s
     const id = setInterval(fetchStatus, 30_000);
     return () => clearInterval(id);
-  }, [fetchStatus]);
+  }, [fetchStatus, externalRefreshKey]);
 
   const handleOpen = async () => {
     setActionLoading(true);
@@ -61,7 +62,7 @@ const StoreStatusWidget = () => {
       showToast('error', getApiErrorMessage(err, 'Failed to open store.'));
     } finally {
       setActionLoading(false);
-    }
+    };
   };
 
   const handleClose = async (force = false) => {
@@ -150,6 +151,20 @@ const StoreStatusWidget = () => {
             <p className={`text-sm font-extrabold mt-0.5 ${statusColor}`}>
               {availability?.status_label ?? '—'}
             </p>
+            <div className="flex flex-wrap items-center gap-3 mt-1 text-[11px] text-gray-400">
+              {availability?.hours && (
+                <span className="inline-flex items-center gap-1">
+                  <Clock size={11} className="text-[#2CD6EB]" />
+                  Hours: <strong className="text-gray-200">{availability.hours}</strong>
+                </span>
+              )}
+              {availability?.whatsapp_number && (
+                <span className="inline-flex items-center gap-1">
+                  <Phone size={11} className="text-emerald-400" />
+                  Alerts: <strong className="text-gray-200 font-mono">{availability.whatsapp_number}</strong>
+                </span>
+              )}
+            </div>
           </div>
         </div>
         {/* Pulse dot */}
@@ -286,11 +301,249 @@ const StoreStatusWidget = () => {
 };
 
 // ─────────────────────────────────────────────
+// Store Operations & Settings Panel
+// (Notification Phone Number, Operating Hours, Global Container Cost)
+// ─────────────────────────────────────────────
+const StoreSettingsWidget = ({ onSettingsSaved }) => {
+  const [settings, setSettings] = useState(null);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [openingTime, setOpeningTime] = useState('08:30 AM');
+  const [closingTime, setClosingTime] = useState('06:30 PM');
+  const [containerCost, setContainerCost] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+
+  const loadSettings = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await vendorService.getStoreSettings();
+      setSettings(data);
+      setWhatsappNumber(data?.whatsapp_number || '');
+      setOpeningTime(data?.opening_time || '08:30 AM');
+      setClosingTime(data?.closing_time || '06:30 PM');
+      setContainerCost(Number(data?.container_cost || 0));
+    } catch {
+      // non-fatal
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault();
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const updated = await vendorService.updateStoreSettings({
+        whatsapp_number: whatsappNumber.trim(),
+        opening_time: openingTime.trim(),
+        closing_time: closingTime.trim(),
+        container_cost: Math.max(0, Number(containerCost) || 0),
+      });
+      setSettings(updated);
+      setWhatsappNumber(updated.whatsapp_number || '');
+      setOpeningTime(updated.opening_time || openingTime);
+      setClosingTime(updated.closing_time || closingTime);
+      setContainerCost(Number(updated.container_cost || 0));
+      setFeedback({
+        type: 'success',
+        msg: 'Store settings saved! Flow Screen 2 & WhatsApp alerts updated.',
+      });
+      if (onSettingsSaved) onSettingsSaved(updated);
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        msg: getApiErrorMessage(err, 'Failed to update store settings.'),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex items-center gap-3">
+        <Loader2 size={16} className="animate-spin text-gray-500" />
+        <span className="text-xs text-gray-500">Loading store configuration…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#171B26] border border-white/10 rounded-2xl overflow-hidden">
+      {/* Summary Header Bar */}
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="w-full p-4 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#FA6131]/15 border border-[#FA6131]/30 flex items-center justify-center shrink-0">
+            <Settings size={18} className="text-[#FA6131]" />
+          </div>
+          <div>
+            <h4 className="text-sm font-extrabold text-white">
+              Store Settings & Flow Defaults
+            </h4>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400 mt-0.5">
+              <span>
+                📦 Pack: <strong className="text-[#FA6131]">{containerCost > 0 ? `₦${containerCost}` : 'Off (₦0)'}</strong>
+              </span>
+              <span>
+                🕒 Hours: <strong className="text-gray-200">{settings?.hours || `${openingTime} – ${closingTime}`}</strong>
+              </span>
+              <span>
+                🔔 WhatsApp: <strong className="text-gray-200 font-mono">{settings?.whatsapp_number || 'Not set'}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+        <span className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-300">
+          {expanded ? 'Hide' : 'Configure'}
+        </span>
+      </button>
+
+      {expanded && (
+        <form onSubmit={handleSave} className="p-4 pt-2 border-t border-white/5 space-y-4">
+          {feedback && (
+            <div
+              className={`px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border ${
+                feedback.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : 'bg-red-500/10 border-red-500/30 text-red-300'
+              }`}
+            >
+              {feedback.type === 'success' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+              {feedback.msg}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Notification Phone Number */}
+            <div className="bg-[#0F1219] border border-white/10 rounded-2xl p-3.5 space-y-2">
+              <label className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-gray-300">
+                <Bell size={13} className="text-emerald-400" />
+                Notification Phone Number
+              </label>
+              <p className="text-[11px] text-gray-500">
+                WhatsApp number that receives instant paid order alerts & Login OTPs.
+              </p>
+              <input
+                type="tel"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                placeholder="e.g. 08031234567 or 2348031234567"
+                className="w-full bg-[#171B26] border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-emerald-400"
+              />
+            </div>
+
+            {/* Operating Hours */}
+            <div className="bg-[#0F1219] border border-white/10 rounded-2xl p-3.5 space-y-2">
+              <label className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-gray-300">
+                <Clock size={13} className="text-[#2CD6EB]" />
+                Default Operating Hours
+              </label>
+              <p className="text-[11px] text-gray-500">
+                Displayed to students on WhatsApp (e.g. 08:30 AM – 06:30 PM).
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Opens</span>
+                  <input
+                    type="text"
+                    value={openingTime}
+                    onChange={(e) => setOpeningTime(e.target.value)}
+                    placeholder="08:30 AM"
+                    className="w-full bg-[#171B26] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-[#2CD6EB]"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Closes</span>
+                  <input
+                    type="text"
+                    value={closingTime}
+                    onChange={(e) => setClosingTime(e.target.value)}
+                    placeholder="06:30 PM"
+                    className="w-full bg-[#171B26] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-[#2CD6EB]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Global Container Cost */}
+          <div className="bg-[#0F1219] border border-white/10 rounded-2xl p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <label className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-gray-300">
+                <Package size={13} className="text-[#FA6131]" />
+                Global Container Cost (Takeaway Pack)
+              </label>
+              <span className="text-[11px] font-bold text-[#FA6131]">
+                Auto-injected into WhatsApp Flow Screen 2
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {[0, 150, 200, 300, 500].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setContainerCost(preset)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                    Number(containerCost) === preset
+                      ? 'bg-[#FA6131] border-[#FA6131] text-white'
+                      : 'bg-[#171B26] border-white/10 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {preset === 0 ? '₦0 (Off)' : `₦${preset}`}
+                </button>
+              ))}
+              <div className="relative w-28">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₦</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={containerCost}
+                  onChange={(e) => setContainerCost(e.target.value)}
+                  className="w-full bg-[#171B26] border border-white/10 rounded-xl pl-7 pr-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-[#FA6131]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-5 py-2.5 rounded-xl bg-[#FA6131] hover:bg-[#e55225] text-white text-xs font-extrabold shadow-lg shadow-[#FA6131]/20 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              Save Store Settings
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
 // Main Dashboard
 // ─────────────────────────────────────────────
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
+  const [settlement, setSettlement] = useState(null);
+  const [showSettlementLedger, setShowSettlementLedger] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(null);
+  const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -310,17 +563,27 @@ const VendorDashboard = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const handleCopyRef = (ref, e) => {
+    if (e) e.stopPropagation();
+    if (!ref) return;
+    navigator.clipboard.writeText(ref);
+    setCopiedRef(ref);
+    setTimeout(() => setCopiedRef(null), 2000);
+  };
+
   const fetchData = useCallback(async (isSilent = false) => {
     try {
       if (!isSilent) setLoading(true);
       else setRefreshing(true);
 
-      const [dashData, ordersData] = await Promise.all([
+      const [dashData, ordersData, settlementData] = await Promise.all([
         vendorService.getDashboard(),
-        vendorService.getOrders({ limit: 20, payment_status: 'PAID' }),
+        vendorService.getOrders({ limit: 30, payment_status: 'PAID' }),
+        vendorService.getTodaySettlement().catch(() => null),
       ]);
       setDashboard(dashData);
       setOrders(Array.isArray(ordersData) ? ordersData : []);
+      if (settlementData) setSettlement(settlementData);
       setError(null);
     } catch (err) {
       if (!isSilent) {
@@ -480,10 +743,13 @@ const VendorDashboard = () => {
   // Filtered orders logic
   const filteredOrders = orders.filter((o) => {
     const st = (o.status || '').toLowerCase();
-    const idStr = String(o.order_number || o.order_id || o.id || '').toLowerCase();
+    const numericIdStr = String(o.order_id || o.id || '').toLowerCase();
+    const orderNumStr = String(o.order_number || '').toLowerCase();
     const custName = String(o.customer_name || '').toLowerCase();
+    const custPhone = String(o.customer_phone || '').toLowerCase();
+    const payRef = String(o.payment_reference || '').toLowerCase();
 
-    if (statusFilter !== 'REJECTED' && o.payment_status !== 'PAID') {
+    if (statusFilter !== 'REJECTED' && (o.payment_status || '').toUpperCase() !== 'PAID') {
       return false;
     }
 
@@ -498,10 +764,16 @@ const VendorDashboard = () => {
       if (!['rejected', 'cancelled', 'abandoned'].includes(st)) return false;
     }
 
-    // Search query
+    // Search query (supports numeric ID e.g. 1082 or #1082, order_number, phone, name, Paystack ref)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      return idStr.includes(q) || custName.includes(q);
+      const q = searchQuery.toLowerCase().trim().replace(/^#/, '');
+      return (
+        numericIdStr.includes(q) ||
+        orderNumStr.includes(q) ||
+        custName.includes(q) ||
+        custPhone.includes(q) ||
+        payRef.includes(q)
+      );
     }
 
     return true;
@@ -529,35 +801,124 @@ const VendorDashboard = () => {
         <p className="text-sm text-gray-500 mt-1">Here's your store overview for today.</p>
       </div>
 
-      {/* ── Hero Payout Card ─────────────────── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#FA6131] to-[#d44520] rounded-2xl md:rounded-3xl p-5 md:p-7 shadow-xl shadow-[#FA6131]/15">
-        <div className="absolute top-0 right-0 p-3 opacity-10">
+      {/* ── Today's Settlement (Live Paystack Tally) ─────────────────── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#FA6131] to-[#d44520] rounded-2xl md:rounded-3xl p-5 md:p-7 shadow-xl shadow-[#FA6131]/15 space-y-4">
+        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
           <Wallet size={90} className="transform translate-x-3 -translate-y-3" />
         </div>
         <div className="relative z-10">
-          <p className="text-white/70 font-semibold uppercase tracking-wider text-[10px] md:text-xs mb-1.5">
-            Today's Payout
-          </p>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-5">
-            {formatMoney(dashboard?.pending_payout)}
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+            <p className="text-white/80 font-extrabold uppercase tracking-wider text-[10px] md:text-xs flex items-center gap-1.5">
+              <ShieldCheck size={14} className="text-white" />
+              Today&apos;s Settlement · Live Paystack Tally
+            </p>
+            <span className="px-2.5 py-0.5 rounded-full bg-black/20 text-white/90 text-[10px] font-bold">
+              Next Transfer: {settlement?.next_settlement_label || 'Today at 06:00 PM WAT'}
+            </span>
+          </div>
+
+          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
+            {formatMoney(settlement?.unsettled_amount ?? dashboard?.pending_payout)}
           </h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
-              <ShoppingBag size={13} className="text-white" />
-              <span className="text-xs font-bold text-white">{dashboard?.orders_count || 0} Orders</span>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                <ShoppingBag size={13} className="text-white" />
+                <span className="text-xs font-bold text-white">
+                  {settlement?.unsettled_orders_count ?? dashboard?.orders_count ?? 0} Verified Txns Awaiting Transfer
+                </span>
+              </div>
+              {settlement?.bank_account_summary && (
+                <div className="flex items-center gap-1.5 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <CreditCard size={12} className="text-white/80" />
+                  <span className="text-[11px] font-bold text-white/90">
+                    {settlement.bank_account_summary}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {settlement?.transactions?.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowSettlementLedger((prev) => !prev)}
+                  className="px-3 py-1.5 rounded-full bg-white text-[#d44520] text-xs font-extrabold shadow-sm hover:bg-white/90 transition-colors"
+                >
+                  {showSettlementLedger ? 'Hide Tally' : `View Tally (${settlement.transactions.length})`}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => navigate('/vendor/earnings')}
+                className="px-3 py-1.5 rounded-full bg-black/25 hover:bg-black/35 text-white text-xs font-bold border border-white/15 transition-colors"
+              >
+                Full Ledger →
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Expandable Live Paystack Transactions Tally */}
+        {showSettlementLedger && settlement?.transactions?.length > 0 && (
+          <div className="relative z-10 bg-black/25 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 space-y-2 max-h-64 overflow-y-auto">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-white/80">
+              Verified Paystack Transactions Today
+            </p>
+            {settlement.transactions.map((tx) => (
+              <div
+                key={tx.order_id}
+                onClick={() => setSelectedOrderId(tx.order_id)}
+                className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-black/20 hover:bg-black/30 cursor-pointer transition-colors text-xs"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-extrabold text-white">#{tx.order_id}</span>
+                    <span className="font-bold text-white/90 truncate">{tx.customer_name}</span>
+                    <span className="text-[10px] text-white/70">
+                      {tx.created_at ? fmtTime(tx.created_at) : ''}
+                    </span>
+                  </div>
+                  {tx.payment_reference && (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="font-mono text-[10px] text-emerald-200 truncate">
+                        Ref: {tx.payment_reference}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyRef(tx.payment_reference, e)}
+                        className="text-white/70 hover:text-white p-0.5"
+                        title="Copy Paystack Reference"
+                      >
+                        {copiedRef === tx.payment_reference ? <Check size={11} /> : <Copy size={11} />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-mono font-extrabold text-white">{formatMoney(tx.total_amount)}</p>
+                  <span className="text-[9px] uppercase font-bold text-white/80">
+                    {tx.settlement_status === 'settled' ? '✓ Settled' : '⏳ Awaiting 6PM'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* ── Store Status ──────────────────────── */}
-      <div>
-        <h3 className="text-base font-bold text-white mb-3 px-1">Store Availability</h3>
-        <StoreStatusWidget />
+      {/* ── Store Status & Settings ──────────────────────── */}
+      <div className="space-y-3">
+        <h3 className="text-base font-bold text-white px-1">Store Availability & Settings</h3>
+        <StoreStatusWidget externalRefreshKey={availabilityRefreshKey} />
+        <StoreSettingsWidget
+          onSettingsSaved={() => setAvailabilityRefreshKey((k) => k + 1)}
+        />
       </div>
 
       {/* ── Quick Actions ────────────────────── */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <button
           onClick={() => navigate('/vendor/menu')}
           className="group flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-[#FA6131]/20 hover:bg-[#FA6131]/5 transition-all text-center"
@@ -568,13 +929,22 @@ const VendorDashboard = () => {
           <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">Manage Menu</span>
         </button>
         <button
-          onClick={() => navigate('/vendor/menu')}
+          onClick={() => navigate('/vendor/orders')}
+          className="group flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-emerald-500/20 hover:bg-emerald-500/5 transition-all text-center"
+        >
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Archive size={20} className="text-emerald-400" />
+          </div>
+          <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">Order Archive</span>
+        </button>
+        <button
+          onClick={() => navigate('/vendor/earnings')}
           className="group flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-[#2CD6EB]/20 hover:bg-[#2CD6EB]/5 transition-all text-center"
         >
           <div className="w-10 h-10 rounded-xl bg-[#2CD6EB]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Package size={20} className="text-[#2CD6EB]" />
+            <Wallet size={20} className="text-[#2CD6EB]" />
           </div>
-          <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">Add Item</span>
+          <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">Settlements</span>
         </button>
       </div>
 
@@ -619,7 +989,7 @@ const VendorDashboard = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by customer name or order ID..."
+            placeholder="Search by Order ID (e.g. 1082), customer phone, name, or Paystack ref..."
             className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#2CD6EB]/40 transition-colors"
           />
           {searchQuery && (
@@ -664,7 +1034,7 @@ const VendorDashboard = () => {
             <p className="text-gray-400 font-medium text-sm">No orders found.</p>
             <p className="text-gray-600 text-xs">
               {searchQuery || statusFilter !== 'ALL'
-                ? 'Try adjusting your search query or filter tab.'
+                ? 'Try adjusting your search query or check the full Order History Archive.'
                 : 'Orders will appear here in real time.'}
             </p>
           </div>
@@ -673,7 +1043,7 @@ const VendorDashboard = () => {
             {filteredOrders.map((order) => {
               const orderId = order.order_id || order.id;
               const st = (order.status || '').toLowerCase();
-              const isPaid = order.payment_status === 'PAID';
+              const isPaid = (order.payment_status || '').toUpperCase() === 'PAID';
               const isPaidOrPending = isPaid && ['pending', 'paid', 'received', ''].includes(st);
               const isPreparing = isPaid && ['preparing', 'confirmed', 'cooking'].includes(st);
               const isReady = isPaid && st === 'ready';
@@ -691,10 +1061,22 @@ const VendorDashboard = () => {
                   {/* Order header */}
                   <div className="flex justify-between items-start border-b border-white/5 pb-3">
                     <div>
-                      <p className="text-[10px] font-bold text-[#2CD6EB] tracking-wider mb-0.5">
-                        #{String(orderId).toUpperCase()}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <span className="text-xs font-mono font-extrabold text-[#2CD6EB] tracking-wider">
+                          #{String(orderId).toUpperCase()}
+                        </span>
+                        {order.order_number && (
+                          <span className="text-[10px] font-mono text-gray-400 font-bold">
+                            {order.order_number}
+                          </span>
+                        )}
+                      </div>
                       <h4 className="text-white font-bold text-sm">{order.customer_name || 'Customer'}</h4>
+                      {order.customer_phone && (
+                        <p className="text-[11px] font-mono text-gray-400 mt-0.5">
+                          📞 {order.customer_phone}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex flex-col items-end">
@@ -726,9 +1108,9 @@ const VendorDashboard = () => {
 
                   {/* Badges & Quick Action Buttons */}
                   <div className="flex flex-wrap justify-between items-center pt-2 border-t border-white/5 gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                        order.payment_status === 'PAID'
+                        isPaid
                           ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                           : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
                       }`}>
@@ -743,6 +1125,20 @@ const VendorDashboard = () => {
                       }`}>
                         {order.status || 'Received'}
                       </span>
+                      {order.payment_reference && (
+                        <span
+                          onClick={(e) => handleCopyRef(order.payment_reference, e)}
+                          className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20"
+                          title="Click to copy verified Paystack reference"
+                        >
+                          Ref: {order.payment_reference}
+                          {copiedRef === order.payment_reference ? (
+                            <Check size={10} className="text-emerald-400" />
+                          ) : (
+                            <Copy size={10} />
+                          )}
+                        </span>
+                      )}
                     </div>
 
                     {/* Inline Actions */}
