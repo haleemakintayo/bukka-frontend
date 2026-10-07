@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { usePaystackPayment } from 'react-paystack';
 import { publicService } from '../../services/publicService';
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MessageCircle, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MessageCircle, ShieldCheck, Clock, Bike } from 'lucide-react';
 
 const formatWhatsappNumber = (value) => {
   const digits = value.replace(/\D/g, '');
@@ -33,6 +33,7 @@ const Checkout = () => {
   const [deliveryAreas, setDeliveryAreas] = useState([]);
   const [selectedAreaId, setSelectedAreaId] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [vendorInfo, setVendorInfo] = useState(null);
 
   const [paymentRef] = useState(() => `bukka_web_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
   const createdOrderRef = useRef(null);
@@ -41,13 +42,22 @@ const Checkout = () => {
 
   React.useEffect(() => {
     if (vendorSlug) {
-      publicService.getVendorDeliveryAreas(vendorSlug)
-        .then(data => {
-          setDeliveryAreas(data || []);
-        })
-        .catch(err => {
-          console.error("Failed to load delivery areas:", err);
-        });
+      Promise.all([
+        publicService.getVendorBySlug(vendorSlug).catch(() => null),
+        publicService.getVendorDeliveryAreas(vendorSlug).catch(() => []),
+      ]).then(([vendorData, areasData]) => {
+        if (vendorData) {
+          setVendorInfo(vendorData);
+          const offersDelivery = vendorData.offers_delivery !== false;
+          const offersPickup = Boolean(vendorData.offers_pickup);
+          if (offersDelivery && !offersPickup) {
+            setOrderType('delivery');
+          } else if (!offersDelivery && offersPickup) {
+            setOrderType('pickup');
+          }
+        }
+        setDeliveryAreas(areasData || []);
+      });
     }
   }, [vendorSlug]);
 
@@ -307,34 +317,70 @@ const Checkout = () => {
           </div>
         </section>
 
-        {/* Order Type Toggle */}
-        <section className="bg-white dark:bg-bukka-card-surface rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
-          <h2 className="font-bold text-gray-900 dark:text-bukka-soft-white mb-4">How do you want your order?</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setOrderType('pickup')}
-              className={`py-3.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border ${
-                orderType === 'pickup'
-                  ? 'bg-gradient-to-r from-bukka-orange to-orange-500 text-white border-transparent shadow-md'
-                  : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              🛍️ Pickup
-            </button>
-            <button
-              type="button"
-              onClick={() => setOrderType('delivery')}
-              className={`py-3.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border ${
-                orderType === 'delivery'
-                  ? 'bg-gradient-to-r from-bukka-orange to-orange-500 text-white border-transparent shadow-md'
-                  : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              🛵 Delivery
-            </button>
-          </div>
-        </section>
+        {/* Order Type Toggle / Single Channel Banner */}
+        {vendorInfo && vendorInfo.offers_delivery !== false && !vendorInfo.offers_pickup ? (
+          <section className="bg-white dark:bg-bukka-card-surface rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-bukka-orange/15 to-orange-500/10 flex items-center justify-center text-bukka-orange shrink-0">
+                <Bike size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-bukka-orange">Campus Delivery Only</p>
+                <p className="text-sm font-extrabold text-gray-900 dark:text-bukka-soft-white">
+                  Direct to your hostel or faculty
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+              🛵 Active
+            </span>
+          </section>
+        ) : vendorInfo && vendorInfo.offers_delivery === false && vendorInfo.offers_pickup ? (
+          <section className="bg-white dark:bg-bukka-card-surface rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-500 shrink-0">
+                <ShoppingBag size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Store Pickup Only</p>
+                <p className="text-sm font-extrabold text-gray-900 dark:text-bukka-soft-white">
+                  Collect in person at physical shop
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+              🛍️ Active
+            </span>
+          </section>
+        ) : (
+          <section className="bg-white dark:bg-bukka-card-surface rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
+            <h2 className="font-bold text-gray-900 dark:text-bukka-soft-white mb-4">How do you want your order?</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setOrderType('pickup')}
+                className={`py-3.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border ${
+                  orderType === 'pickup'
+                    ? 'bg-gradient-to-r from-bukka-orange to-orange-500 text-white border-transparent shadow-md'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                🛍️ Pickup
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderType('delivery')}
+                className={`py-3.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border ${
+                  orderType === 'delivery'
+                    ? 'bg-gradient-to-r from-bukka-orange to-orange-500 text-white border-transparent shadow-md'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                🛵 Delivery
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Contact & Delivery Form */}
         <section className="bg-white dark:bg-bukka-card-surface rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">

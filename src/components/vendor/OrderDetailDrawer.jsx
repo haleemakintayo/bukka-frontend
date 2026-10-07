@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   X, Clock, Phone, MapPin, CreditCard, ChefHat, Truck,
   CheckCircle2, AlertCircle, Ban, Printer, MessageSquare,
-  Loader2, ExternalLink, Copy, Check, ShieldCheck
+  Loader2, ExternalLink, Copy, Check, ShieldCheck, Bike
 } from 'lucide-react';
 import { vendorService } from '../../services/vendorService';
 import { getApiErrorMessage } from '../../services/api';
@@ -335,9 +335,16 @@ const OrderDetailDrawer = ({
               {/* Delivery Details */}
               {isDelivery && (
                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    Delivery Address & Rider
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      Delivery Address & Rider
+                    </p>
+                    {order.delivery_area_name && (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-[#2CD6EB]/10 text-[#2CD6EB] border border-[#2CD6EB]/20">
+                        📍 {order.delivery_area_name}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-start gap-2 text-xs text-gray-200">
                     <MapPin size={14} className="text-[#FA6131] shrink-0 mt-0.5" />
                     <div>
@@ -371,7 +378,7 @@ const OrderDetailDrawer = ({
               {/* Items List */}
               <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Ordered Items
+                  Ordered Items & Fulfillment
                 </p>
                 <div className="divide-y divide-white/5">
                   {order.items &&
@@ -393,6 +400,22 @@ const OrderDetailDrawer = ({
                         </p>
                       </div>
                     ))}
+
+                  {/* Delivery Fee Line Item */}
+                  {order.delivery_fee && Number(order.delivery_fee) > 0 ? (
+                    <div className="py-2.5 flex items-center justify-between text-xs border-t border-white/5">
+                      <div>
+                        <p className="text-white font-bold flex items-center gap-1.5">
+                          <Bike size={13} className="text-[#2CD6EB]" />
+                          Campus Delivery Fee {order.delivery_area_name ? `(${order.delivery_area_name})` : ''}
+                        </p>
+                        <p className="text-[10px] text-gray-500">Hostel / Campus dispatch</p>
+                      </div>
+                      <p className="text-[#2CD6EB] font-extrabold font-mono">
+                        {formatMoney(order.delivery_fee)}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </>

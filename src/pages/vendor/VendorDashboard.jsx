@@ -14,6 +14,7 @@ import OrderDetailDrawer from '../../components/vendor/OrderDetailDrawer';
 import AcceptOrderModal from '../../components/vendor/AcceptOrderModal';
 import DispatchOrderModal from '../../components/vendor/DispatchOrderModal';
 import RejectOrderModal from '../../components/vendor/RejectOrderModal';
+import CampusDeliveryManager from '../../components/vendor/CampusDeliveryManager';
 
 // ─────────────────────────────────────────────
 // Store Status Widget
@@ -400,7 +401,7 @@ const StoreSettingsWidget = ({ onSettingsSaved }) => {
                 🕒 Hours: <strong className="text-gray-200">{settings?.hours || `${openingTime} – ${closingTime}`}</strong>
               </span>
               <span>
-                🔔 WhatsApp: <strong className="text-gray-200 font-mono">{settings?.whatsapp_number || 'Not set'}</strong>
+                🚚 Fulfillment: <strong className="text-[#2CD6EB]">{settings?.offers_delivery ? (settings?.offers_pickup ? 'Delivery + Pickup' : 'Delivery-Only') : 'Pickup-Only'}</strong>
               </span>
             </div>
           </div>
@@ -909,9 +910,12 @@ const VendorDashboard = () => {
       </div>
 
       {/* ── Store Status & Settings ──────────────────────── */}
-      <div className="space-y-3">
-        <h3 className="text-base font-bold text-white px-1">Store Availability & Settings</h3>
+      <div className="space-y-4">
+        <h3 className="text-base font-bold text-white px-1">Store Operations & Campus Fulfillment</h3>
         <StoreStatusWidget externalRefreshKey={availabilityRefreshKey} />
+        <CampusDeliveryManager
+          onSettingsUpdated={() => setAvailabilityRefreshKey((k) => k + 1)}
+        />
         <StoreSettingsWidget
           onSettingsSaved={() => setAvailabilityRefreshKey((k) => k + 1)}
         />

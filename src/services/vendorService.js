@@ -199,4 +199,36 @@ export const vendorService = {
     const response = await apiClient.post('/vendors/me/availability/pause', { minutes });
     return response.data;
   },
+
+  // ── Campus Delivery Areas Endpoints ─────────────────────────────────────
+
+  /** GET /vendors/me/delivery-areas — list all configured delivery zones */
+  getDeliveryAreas: async () => {
+    const response = await apiClient.get('/vendors/me/delivery-areas');
+    return response.data;
+  },
+
+  /** POST /vendors/me/delivery-areas — add a new campus delivery zone */
+  createDeliveryArea: async (payload) => {
+    const response = await apiClient.post('/vendors/me/delivery-areas', payload);
+    return response.data;
+  },
+
+  /** PATCH /vendors/me/delivery-areas/{areaId} — update zone price, name, or active toggle */
+  updateDeliveryArea: async (areaId, payload) => {
+    const response = await apiClient.patch(`/vendors/me/delivery-areas/${areaId}`, payload);
+    return response.data;
+  },
+
+  /** DELETE /vendors/me/delivery-areas/{areaId} — delete a delivery zone */
+  deleteDeliveryArea: async (areaId) => {
+    const response = await apiClient.delete(`/vendors/me/delivery-areas/${areaId}`);
+    return response.data;
+  },
+
+  /** POST /vendors/me/delivery-areas/batch — batch seed or update campus zones */
+  batchCreateDeliveryAreas: async (areas) => {
+    const response = await apiClient.post('/vendors/me/delivery-areas/batch', { areas });
+    return response.data;
+  },
 };

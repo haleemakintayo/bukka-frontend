@@ -142,10 +142,20 @@ const OrderCard = ({
       </div>
 
       {/* Delivery / Prep Notice */}
-      {isDelivery && order.delivery_address && (
+      {isDelivery && (order.delivery_address || order.delivery_area_name) && (
         <div className="flex items-start gap-1.5 text-xs text-gray-300 bg-white/[0.01] px-2.5 py-1.5 rounded-xl border border-white/5">
           <MapPin size={12} className="text-[#FA6131] shrink-0 mt-0.5" />
-          <span className="truncate">{order.delivery_address}</span>
+          <div className="min-w-0 flex-1 truncate">
+            {order.delivery_area_name && (
+              <span className="font-bold text-white mr-1.5">[{order.delivery_area_name}]</span>
+            )}
+            <span className="truncate">{order.delivery_address || 'Campus delivery'}</span>
+            {order.delivery_fee > 0 && (
+              <span className="text-[10px] text-[#2CD6EB] font-bold font-mono ml-1.5">
+                +₦{Number(order.delivery_fee).toLocaleString()}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
