@@ -30,6 +30,7 @@ import VendorDashboard from './pages/vendor/VendorDashboard';
 import VendorOrdersFulfillment from './pages/vendor/VendorOrdersFulfillment';
 import VendorMenuManager from './pages/vendor/VendorMenuManager';
 import VendorEarnings from './pages/vendor/VendorEarnings';
+import VendorSettings from './pages/vendor/VendorSettings';
 
 // Student Page Components
 import VendorMenu from './pages/public/VendorMenu';
@@ -90,6 +91,7 @@ function App() {
             <Route path="orders" element={<VendorOrdersFulfillment />} />
             <Route path="menu" element={<VendorMenuManager />} />
             <Route path="earnings" element={<VendorEarnings />} />
+            <Route path="settings" element={<VendorSettings />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
         </Route>

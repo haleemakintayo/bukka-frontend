@@ -231,4 +231,31 @@ export const vendorService = {
     const response = await apiClient.post('/vendors/me/delivery-areas/batch', { areas });
     return response.data;
   },
+
+  // ── Dispatch Fleet (Riders) Endpoints ───────────────────────────────────
+
+  /** GET /vendors/me/riders — list all saved delivery riders */
+  getRiders: async () => {
+    const response = await apiClient.get('/vendors/me/riders');
+    return response.data;
+  },
+
+  /** POST /vendors/me/riders — save a new rider to fleet */
+  createRider: async (payload) => {
+    const response = await apiClient.post('/vendors/me/riders', payload);
+    return response.data;
+  },
+
+  /** PATCH /vendors/me/riders/{riderId} — update rider details or active toggle */
+  updateRider: async (riderId, payload) => {
+    const response = await apiClient.patch(`/vendors/me/riders/${riderId}`, payload);
+    return response.data;
+  },
+
+  /** DELETE /vendors/me/riders/{riderId} — remove rider from fleet */
+  deleteRider: async (riderId) => {
+    const response = await apiClient.delete(`/vendors/me/riders/${riderId}`);
+    return response.data;
+  },
 };
+

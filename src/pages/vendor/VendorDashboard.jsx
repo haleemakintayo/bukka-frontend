@@ -7,533 +7,15 @@ import {
   Wallet, Package, Power, PauseCircle, CheckCircle2, XCircle, AlertTriangle,
   X, MapPin, Phone, CreditCard, FileText, ChevronRight, Eye, Truck, Store,
   Search, Ban, RefreshCw, Filter, Check, ChefHat, ShieldCheck, Copy,
-  Settings, Bell, Archive
+  Settings, Bell, Archive, Flame
 } from 'lucide-react';
 
 import OrderDetailDrawer from '../../components/vendor/OrderDetailDrawer';
 import AcceptOrderModal from '../../components/vendor/AcceptOrderModal';
 import DispatchOrderModal from '../../components/vendor/DispatchOrderModal';
 import RejectOrderModal from '../../components/vendor/RejectOrderModal';
-import CampusDeliveryManager from '../../components/vendor/CampusDeliveryManager';
+import StoreStatusWidget from '../../components/vendor/StoreStatusWidget';
 
-// ─────────────────────────────────────────────
-// Store Status Widget
-// ─────────────────────────────────────────────
-const StoreStatusWidget = ({ externalRefreshKey = 0 }) => {
-  const [availability, setAvailability] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [pauseMinutes, setPauseMinutes] = useState(30);
-  const [showPausePanel, setShowPausePanel] = useState(false);
-  const [conflictOrders, setConflictOrders] = useState(null); // in-flight order IDs on 409
-  const [toast, setToast] = useState(null); // { type: 'success'|'error', msg }
-
-  const showToast = (type, msg) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  const fetchStatus = useCallback(async () => {
-    try {
-      const data = await vendorService.getAvailability();
-      setAvailability(data);
-    } catch {
-      // silently fail – user sees stale state
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStatus();
-    // Refresh countdown every 30s
-    const id = setInterval(fetchStatus, 30_000);
-    return () => clearInterval(id);
-  }, [fetchStatus, externalRefreshKey]);
-
-  const handleOpen = async () => {
-    setActionLoading(true);
-    setConflictOrders(null);
-    try {
-      const data = await vendorService.openStore();
-      setAvailability(data);
-      setShowPausePanel(false);
-      showToast('success', 'Store is now open! 🟢');
-    } catch (err) {
-      showToast('error', getApiErrorMessage(err, 'Failed to open store.'));
-    } finally {
-      setActionLoading(false);
-    };
-  };
-
-  const handleClose = async (force = false) => {
-    setActionLoading(true);
-    try {
-      const data = await vendorService.closeStore(force);
-      setAvailability(data);
-      setConflictOrders(null);
-      setShowPausePanel(false);
-      showToast('success', 'Store closed.');
-    } catch (err) {
-      // 409 — in-flight orders exist
-      if (err.response?.status === 409) {
-        const detail = err.response.data?.detail;
-        setConflictOrders(detail?.in_flight_order_ids || []);
-      } else {
-        showToast('error', getApiErrorMessage(err, 'Failed to close store.'));
-      }
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handlePause = async () => {
-    setActionLoading(true);
-    try {
-      const data = await vendorService.pauseStore(pauseMinutes);
-      setAvailability(data);
-      setShowPausePanel(false);
-      showToast('success', `Store paused for ${pauseMinutes} minutes. ⏸️`);
-    } catch (err) {
-      showToast('error', getApiErrorMessage(err, 'Failed to pause store.'));
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // ── Derived state ─────────────────────────
-  const isOpen = availability?.is_open;
-  const isPaused = isOpen && (availability?.pause_remaining_seconds ?? 0) > 0;
-  const isClosed = !isOpen;
-
-  const statusColor = isClosed
-    ? 'text-red-400'
-    : isPaused
-    ? 'text-amber-400'
-    : 'text-green-400';
-
-  const statusBg = isClosed
-    ? 'bg-red-500/10 border-red-500/20'
-    : isPaused
-    ? 'bg-amber-500/10 border-amber-500/20'
-    : 'bg-green-500/10 border-green-500/20';
-
-  const StatusIcon = isClosed ? XCircle : isPaused ? PauseCircle : CheckCircle2;
-
-  if (loading) {
-    return (
-      <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5 flex items-center gap-3">
-        <Loader2 size={18} className="animate-spin text-gray-500" />
-        <span className="text-sm text-gray-500">Loading store status…</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {/* Toast */}
-      {toast && (
-        <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border ${
-          toast.type === 'success'
-            ? 'bg-green-500/10 border-green-500/20 text-green-400'
-            : 'bg-red-500/10 border-red-500/20 text-red-400'
-        }`}>
-          {toast.type === 'success' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
-      {/* Status Card */}
-      <div className={`flex items-center justify-between p-4 rounded-2xl border ${statusBg}`}>
-        <div className="flex items-center gap-3">
-          <StatusIcon size={22} className={statusColor} />
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Store Status</p>
-            <p className={`text-sm font-extrabold mt-0.5 ${statusColor}`}>
-              {availability?.status_label ?? '—'}
-            </p>
-            <div className="flex flex-wrap items-center gap-3 mt-1 text-[11px] text-gray-400">
-              {availability?.hours && (
-                <span className="inline-flex items-center gap-1">
-                  <Clock size={11} className="text-[#2CD6EB]" />
-                  Hours: <strong className="text-gray-200">{availability.hours}</strong>
-                </span>
-              )}
-              {availability?.whatsapp_number && (
-                <span className="inline-flex items-center gap-1">
-                  <Phone size={11} className="text-emerald-400" />
-                  Alerts: <strong className="text-gray-200 font-mono">{availability.whatsapp_number}</strong>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        {/* Pulse dot */}
-        <span className={`w-2.5 h-2.5 rounded-full ${
-          isClosed ? 'bg-red-500' : isPaused ? 'bg-amber-400 animate-pulse' : 'bg-green-400 animate-pulse'
-        }`} />
-      </div>
-
-      {/* In-flight conflict modal */}
-      {conflictOrders && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center gap-2 text-amber-400">
-            <AlertTriangle size={18} />
-            <p className="text-sm font-bold">In-flight orders detected</p>
-          </div>
-          <p className="text-xs text-gray-400">
-            Orders <span className="text-white font-semibold">#{conflictOrders.join(', #')}</span> are
-            still active. Closing now will not cancel them, but customers won't be able to start
-            new orders.
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleClose(true)}
-              disabled={actionLoading}
-              className="flex-1 py-2 text-xs font-bold bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-colors disabled:opacity-50"
-            >
-              {actionLoading ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Force Close'}
-            </button>
-            <button
-              onClick={() => setConflictOrders(null)}
-              className="flex-1 py-2 text-xs font-bold bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="grid grid-cols-3 gap-2">
-        {/* Open */}
-        <button
-          onClick={handleOpen}
-          disabled={actionLoading || (!isClosed && !isPaused)}
-          className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs font-bold transition-all
-            ${!isClosed && !isPaused
-              ? 'bg-green-500/10 border-green-500/30 text-green-400 ring-1 ring-green-500/40 cursor-default'
-              : 'bg-white/[0.03] border-white/5 text-gray-400 hover:bg-green-500/10 hover:border-green-500/20 hover:text-green-400'}
-            disabled:opacity-40 disabled:cursor-not-allowed`}
-        >
-          {actionLoading && !isClosed && !isPaused
-            ? <Loader2 size={16} className="animate-spin" />
-            : <Power size={16} />}
-          Open
-        </button>
-
-        {/* Pause */}
-        <button
-          onClick={() => { setShowPausePanel(!showPausePanel); setConflictOrders(null); }}
-          disabled={actionLoading || isClosed}
-          className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs font-bold transition-all
-            ${isPaused
-              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 ring-1 ring-amber-500/40'
-              : 'bg-white/[0.03] border-white/5 text-gray-400 hover:bg-amber-500/10 hover:border-amber-500/20 hover:text-amber-400'}
-            disabled:opacity-40 disabled:cursor-not-allowed`}
-        >
-          <PauseCircle size={16} />
-          Pause
-        </button>
-
-        {/* Close */}
-        <button
-          onClick={() => { handleClose(false); setConflictOrders(null); }}
-          disabled={actionLoading || isClosed}
-          className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs font-bold transition-all
-            ${isClosed
-              ? 'bg-red-500/10 border-red-500/30 text-red-400 ring-1 ring-red-500/40 cursor-default'
-              : 'bg-white/[0.03] border-white/5 text-gray-400 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400'}
-            disabled:opacity-40 disabled:cursor-not-allowed`}
-        >
-          {actionLoading && isClosed
-            ? <Loader2 size={16} className="animate-spin" />
-            : <XCircle size={16} />}
-          Close
-        </button>
-      </div>
-
-      {/* Pause Duration Panel */}
-      {showPausePanel && (
-        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-3">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pause duration</p>
-          <div className="grid grid-cols-4 gap-2">
-            {[15, 30, 45, 60].map((m) => (
-              <button
-                key={m}
-                onClick={() => setPauseMinutes(m)}
-                className={`py-2 rounded-xl text-xs font-bold border transition-all ${
-                  pauseMinutes === m
-                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-                    : 'bg-white/[0.03] border-white/5 text-gray-500 hover:border-white/10'
-                }`}
-              >
-                {m}m
-              </button>
-            ))}
-          </div>
-          {/* Custom input */}
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={5}
-              max={480}
-              value={pauseMinutes}
-              onChange={(e) => setPauseMinutes(Number(e.target.value))}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-semibold focus:outline-none focus:border-amber-500/40"
-              placeholder="Custom minutes"
-            />
-            <span className="text-xs text-gray-500 whitespace-nowrap">min</span>
-          </div>
-          <button
-            onClick={handlePause}
-            disabled={actionLoading || pauseMinutes < 5 || pauseMinutes > 480}
-            className="w-full py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 rounded-xl text-sm font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
-          >
-            {actionLoading
-              ? <Loader2 size={15} className="animate-spin" />
-              : <PauseCircle size={15} />}
-            Pause for {pauseMinutes}m
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────
-// Store Operations & Settings Panel
-// (Notification Phone Number, Operating Hours, Global Container Cost)
-// ─────────────────────────────────────────────
-const StoreSettingsWidget = ({ onSettingsSaved }) => {
-  const [settings, setSettings] = useState(null);
-  const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [openingTime, setOpeningTime] = useState('08:30 AM');
-  const [closingTime, setClosingTime] = useState('06:30 PM');
-  const [containerCost, setContainerCost] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [feedback, setFeedback] = useState(null);
-
-  const loadSettings = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await vendorService.getStoreSettings();
-      setSettings(data);
-      setWhatsappNumber(data?.whatsapp_number || '');
-      setOpeningTime(data?.opening_time || '08:30 AM');
-      setClosingTime(data?.closing_time || '06:30 PM');
-      setContainerCost(Number(data?.container_cost || 0));
-    } catch {
-      // non-fatal
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
-
-  const handleSave = async (e) => {
-    if (e) e.preventDefault();
-    setSaving(true);
-    setFeedback(null);
-    try {
-      const updated = await vendorService.updateStoreSettings({
-        whatsapp_number: whatsappNumber.trim(),
-        opening_time: openingTime.trim(),
-        closing_time: closingTime.trim(),
-        container_cost: Math.max(0, Number(containerCost) || 0),
-      });
-      setSettings(updated);
-      setWhatsappNumber(updated.whatsapp_number || '');
-      setOpeningTime(updated.opening_time || openingTime);
-      setClosingTime(updated.closing_time || closingTime);
-      setContainerCost(Number(updated.container_cost || 0));
-      setFeedback({
-        type: 'success',
-        msg: 'Store settings saved! Flow Screen 2 & WhatsApp alerts updated.',
-      });
-      if (onSettingsSaved) onSettingsSaved(updated);
-      setTimeout(() => setFeedback(null), 4000);
-    } catch (err) {
-      setFeedback({
-        type: 'error',
-        msg: getApiErrorMessage(err, 'Failed to update store settings.'),
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex items-center gap-3">
-        <Loader2 size={16} className="animate-spin text-gray-500" />
-        <span className="text-xs text-gray-500">Loading store configuration…</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-[#171B26] border border-white/10 rounded-2xl overflow-hidden">
-      {/* Summary Header Bar */}
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        className="w-full p-4 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#FA6131]/15 border border-[#FA6131]/30 flex items-center justify-center shrink-0">
-            <Settings size={18} className="text-[#FA6131]" />
-          </div>
-          <div>
-            <h4 className="text-sm font-extrabold text-white">
-              Store Settings & Flow Defaults
-            </h4>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400 mt-0.5">
-              <span>
-                📦 Pack: <strong className="text-[#FA6131]">{containerCost > 0 ? `₦${containerCost}` : 'Off (₦0)'}</strong>
-              </span>
-              <span>
-                🕒 Hours: <strong className="text-gray-200">{settings?.hours || `${openingTime} – ${closingTime}`}</strong>
-              </span>
-              <span>
-                🚚 Fulfillment: <strong className="text-[#2CD6EB]">{settings?.offers_delivery ? (settings?.offers_pickup ? 'Delivery + Pickup' : 'Delivery-Only') : 'Pickup-Only'}</strong>
-              </span>
-            </div>
-          </div>
-        </div>
-        <span className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-300">
-          {expanded ? 'Hide' : 'Configure'}
-        </span>
-      </button>
-
-      {expanded && (
-        <form onSubmit={handleSave} className="p-4 pt-2 border-t border-white/5 space-y-4">
-          {feedback && (
-            <div
-              className={`px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border ${
-                feedback.type === 'success'
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                  : 'bg-red-500/10 border-red-500/30 text-red-300'
-              }`}
-            >
-              {feedback.type === 'success' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
-              {feedback.msg}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Notification Phone Number */}
-            <div className="bg-[#0F1219] border border-white/10 rounded-2xl p-3.5 space-y-2">
-              <label className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-gray-300">
-                <Bell size={13} className="text-emerald-400" />
-                Notification Phone Number
-              </label>
-              <p className="text-[11px] text-gray-500">
-                WhatsApp number that receives instant paid order alerts & Login OTPs.
-              </p>
-              <input
-                type="tel"
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
-                placeholder="e.g. 08031234567 or 2348031234567"
-                className="w-full bg-[#171B26] border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-emerald-400"
-              />
-            </div>
-
-            {/* Operating Hours */}
-            <div className="bg-[#0F1219] border border-white/10 rounded-2xl p-3.5 space-y-2">
-              <label className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-gray-300">
-                <Clock size={13} className="text-[#2CD6EB]" />
-                Default Operating Hours
-              </label>
-              <p className="text-[11px] text-gray-500">
-                Displayed to students on WhatsApp (e.g. 08:30 AM – 06:30 PM).
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Opens</span>
-                  <input
-                    type="text"
-                    value={openingTime}
-                    onChange={(e) => setOpeningTime(e.target.value)}
-                    placeholder="08:30 AM"
-                    className="w-full bg-[#171B26] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-[#2CD6EB]"
-                  />
-                </div>
-                <div>
-                  <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Closes</span>
-                  <input
-                    type="text"
-                    value={closingTime}
-                    onChange={(e) => setClosingTime(e.target.value)}
-                    placeholder="06:30 PM"
-                    className="w-full bg-[#171B26] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-[#2CD6EB]"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Global Container Cost */}
-          <div className="bg-[#0F1219] border border-white/10 rounded-2xl p-3.5 space-y-2.5">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <label className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-gray-300">
-                <Package size={13} className="text-[#FA6131]" />
-                Global Container Cost (Takeaway Pack)
-              </label>
-              <span className="text-[11px] font-bold text-[#FA6131]">
-                Auto-injected into WhatsApp Flow Screen 2
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {[0, 150, 200, 300, 500].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setContainerCost(preset)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                    Number(containerCost) === preset
-                      ? 'bg-[#FA6131] border-[#FA6131] text-white'
-                      : 'bg-[#171B26] border-white/10 text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {preset === 0 ? '₦0 (Off)' : `₦${preset}`}
-                </button>
-              ))}
-              <div className="relative w-28">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₦</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="50"
-                  value={containerCost}
-                  onChange={(e) => setContainerCost(e.target.value)}
-                  className="w-full bg-[#171B26] border border-white/10 rounded-xl pl-7 pr-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-[#FA6131]"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-[#FA6131] hover:bg-[#e55225] text-white text-xs font-extrabold shadow-lg shadow-[#FA6131]/20 transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              Save Store Settings
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
-  );
-};
 
 // ─────────────────────────────────────────────
 // Main Dashboard
@@ -909,48 +391,51 @@ const VendorDashboard = () => {
         )}
       </div>
 
-      {/* ── Store Status & Settings ──────────────────────── */}
-      <div className="space-y-4">
-        <h3 className="text-base font-bold text-white px-1">Store Operations & Campus Fulfillment</h3>
-        <StoreStatusWidget externalRefreshKey={availabilityRefreshKey} />
-        <CampusDeliveryManager
-          onSettingsUpdated={() => setAvailabilityRefreshKey((k) => k + 1)}
-        />
-        <StoreSettingsWidget
-          onSettingsSaved={() => setAvailabilityRefreshKey((k) => k + 1)}
-        />
-      </div>
-
-      {/* ── Quick Actions ────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
-        <button
-          onClick={() => navigate('/vendor/menu')}
-          className="group flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-[#FA6131]/20 hover:bg-[#FA6131]/5 transition-all text-center"
-        >
-          <div className="w-10 h-10 rounded-xl bg-[#FA6131]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <LayoutList size={20} className="text-[#FA6131]" />
-          </div>
-          <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">Manage Menu</span>
-        </button>
+      {/* ── Quick Navigation & Operation Hub ────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <button
           onClick={() => navigate('/vendor/orders')}
-          className="group flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-emerald-500/20 hover:bg-emerald-500/5 transition-all text-center"
+          className="group flex flex-col items-center gap-2 p-3.5 rounded-2xl bg-[#171B26] border border-white/5 hover:border-[#FA6131]/30 hover:bg-[#FA6131]/5 transition-all text-center"
+        >
+          <div className="w-10 h-10 rounded-xl bg-[#FA6131]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Flame size={20} className="text-[#FA6131]" />
+          </div>
+          <span className="text-xs font-bold text-gray-300 group-hover:text-white transition-colors">Live Orders</span>
+        </button>
+
+        <button
+          onClick={() => navigate('/vendor/menu')}
+          className="group flex flex-col items-center gap-2 p-3.5 rounded-2xl bg-[#171B26] border border-white/5 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all text-center"
         >
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Archive size={20} className="text-emerald-400" />
+            <LayoutList size={20} className="text-emerald-400" />
           </div>
-          <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">Order Archive</span>
+          <span className="text-xs font-bold text-gray-300 group-hover:text-white transition-colors">Menu Items</span>
         </button>
+
         <button
           onClick={() => navigate('/vendor/earnings')}
-          className="group flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-[#2CD6EB]/20 hover:bg-[#2CD6EB]/5 transition-all text-center"
+          className="group flex flex-col items-center gap-2 p-3.5 rounded-2xl bg-[#171B26] border border-white/5 hover:border-[#2CD6EB]/30 hover:bg-[#2CD6EB]/5 transition-all text-center"
         >
           <div className="w-10 h-10 rounded-xl bg-[#2CD6EB]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Wallet size={20} className="text-[#2CD6EB]" />
           </div>
-          <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">Settlements</span>
+          <span className="text-xs font-bold text-gray-300 group-hover:text-white transition-colors">Payouts</span>
+        </button>
+
+        <button
+          onClick={() => navigate('/vendor/settings')}
+          className="group flex flex-col items-center gap-2 p-3.5 rounded-2xl bg-[#171B26] border border-white/5 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all text-center"
+        >
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Settings size={20} className="text-purple-400" />
+          </div>
+          <span className="text-xs font-bold text-gray-300 group-hover:text-white transition-colors">Fleet & Settings</span>
         </button>
       </div>
+
+      {/* ── Store Live Status Control ──────────────────────── */}
+      <StoreStatusWidget externalRefreshKey={availabilityRefreshKey} />
 
       {/* ── Orders Management Section ──────────────────────── */}
       <div className="space-y-4">

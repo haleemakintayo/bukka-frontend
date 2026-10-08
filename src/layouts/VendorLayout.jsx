@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, Navigate } from 'react-router-dom';
-import { Home, LayoutList, LogOut, Flame, Wallet } from 'lucide-react';
+import { Home, LayoutList, LogOut, Flame, Wallet, Settings } from 'lucide-react';
 import { useVendorAuth } from '../context/VendorAuthContext';
 
 const VendorLayout = () => {
@@ -25,13 +25,28 @@ const VendorLayout = () => {
             <span className="text-[8px] font-bold uppercase tracking-widest text-gray-500">vendor portal</span>
           </div>
         </div>
-        <button
-          onClick={logout}
-          className="w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/10 flex items-center justify-center text-gray-500 hover:text-red-400 transition-all border border-white/5"
-          aria-label="Log out"
-        >
-          <LogOut size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          <NavLink
+            to="/vendor/settings"
+            className={({ isActive }) =>
+              `w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${
+                isActive
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                  : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border-white/5'
+              }`
+            }
+            aria-label="Settings"
+          >
+            <Settings size={16} />
+          </NavLink>
+          <button
+            onClick={logout}
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/10 flex items-center justify-center text-gray-500 hover:text-red-400 transition-all border border-white/5"
+            aria-label="Log out"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -109,6 +124,24 @@ const VendorLayout = () => {
               {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-amber-400 rounded-full" />}
               <Wallet size={20} />
               <span className="text-[9px] font-bold tracking-wider uppercase">Earnings</span>
+            </>
+          )}
+        </NavLink>
+
+        {/* Settings */}
+        <NavLink
+          to="/vendor/settings"
+          className={({ isActive }) => 
+            `flex flex-col items-center gap-1 flex-1 py-2.5 transition-all duration-200 relative ${
+              isActive ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-purple-400 rounded-full" />}
+              <Settings size={20} />
+              <span className="text-[9px] font-bold tracking-wider uppercase">Settings</span>
             </>
           )}
         </NavLink>
