@@ -238,9 +238,8 @@ const QuickInspectDrawer = ({ vendor, onClose, onActivate, onQRClick, onNavigate
                 bukkaai.com.ng/order/{vendor.slug || '—'}
               </span>
             </DetailField>
-            <DetailField label="Bank Details" value={vendor.bank_details || 'Not provided'} />
-            {vendor.subaccount_code && (
-              <DetailField label="Paystack Sub" value={vendor.subaccount_code} mono />
+            {(vendor.bachs_destination_id || vendor.subaccount_code) && (
+              <DetailField label="Destination" value={vendor.bachs_destination_id || vendor.subaccount_code} mono />
             )}
             <DetailField label="Menu Items" value={`${vendor.menu_count} active items`} />
             <DetailField label="Joined" value={formatDate(vendor.created_at)} />

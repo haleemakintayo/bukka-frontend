@@ -113,7 +113,7 @@ const VendorSettings = () => {
           </section>
         )}
 
-        {/* 5. Banking & Paystack Settlement Overview */}
+        {/* 5. Banking & Bachs Settlement Overview */}
         {(activeTab === 'all' || activeTab === 'banking') && (
           <section id="banking" className="space-y-2">
             <div className="bg-[#171B26] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4">
@@ -123,13 +123,13 @@ const VendorSettings = () => {
                     <Building2 size={16} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-extrabold text-white">Banking & Paystack Settlements</h3>
+                    <h3 className="text-sm font-extrabold text-white">Banking & Bachs Settlements</h3>
                     <p className="text-[11px] text-gray-400">Verified bank transfer destination for customer payments</p>
                   </div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold flex items-center gap-1">
                   <ShieldCheck size={11} />
-                  Split Transfers Active
+                  Settlements Active
                 </span>
               </div>
 
@@ -156,7 +156,7 @@ const VendorSettings = () => {
                     {settlement?.next_settlement_label || 'Daily at 06:00 PM WAT'}
                   </p>
                   <p className="text-xs text-gray-400">
-                    Verified transactions are tallied continuously and settled directly by Paystack end-of-day.
+                    Verified transactions are tallied continuously and settled directly via Bachs end-of-day.
                   </p>
                 </div>
               </div>

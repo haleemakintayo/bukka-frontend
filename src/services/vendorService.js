@@ -12,7 +12,7 @@ export const vendorService = {
     return response.data;
   },
 
-  /** GET /vendors/me/settlement/today — live tally of verified Paystack transactions awaiting EOD transfer */
+  /** GET /vendors/me/settlement/today — live tally of verified Bachs transactions awaiting EOD transfer */
   getTodaySettlement: async () => {
     const response = await apiClient.get('/vendors/me/settlement/today');
     return response.data;

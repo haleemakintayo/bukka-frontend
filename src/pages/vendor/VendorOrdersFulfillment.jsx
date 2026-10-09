@@ -335,7 +335,7 @@ const VendorOrdersFulfillment = () => {
       return false;
     }
 
-    // Search query (matches numeric ID e.g. 1082, order_number, phone, customer name, or Paystack ref)
+    // Search query (matches numeric ID e.g. 1082, order_number, phone, customer name, or payment ref)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim().replace(/^#/, '');
       return (
@@ -585,7 +585,7 @@ const VendorOrdersFulfillment = () => {
               setSearchQuery(e.target.value);
               if (viewMode === 'archive') setArchivePage(1);
             }}
-            placeholder="Search by Order ID (e.g. 1082 or #1082), customer phone, name, or Paystack ref…"
+            placeholder="Search by Order ID (e.g. 1082 or #1082), customer phone, name, or payment ref…"
             className="w-full bg-[#171B26] border border-white/10 rounded-2xl pl-11 pr-10 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FA6131]/50 transition-colors shadow-inner"
           />
           {searchQuery && (
@@ -811,7 +811,7 @@ const VendorOrdersFulfillment = () => {
                   </span>
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Search any Order ID (e.g. <span className="text-white font-mono">1082</span>), customer phone number, or Paystack reference to verify payment claims and timestamps.
+                  Search any Order ID (e.g. <span className="text-white font-mono">1082</span>), customer phone number, or payment reference to verify payment claims and timestamps.
                 </p>
               </div>
             </div>
@@ -885,7 +885,7 @@ const VendorOrdersFulfillment = () => {
                               : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
                           }`}
                         >
-                          {isPaid ? '✓ Paystack Verified' : `⚠ ${order.payment_status || 'Unpaid'}`}
+                          {isPaid ? '✓ Bachs Verified' : `⚠ ${order.payment_status || 'Unpaid'}`}
                         </span>
                         <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[10px] font-bold uppercase">
                           {order.status}
@@ -919,10 +919,10 @@ const VendorOrdersFulfillment = () => {
                         )}
                       </div>
 
-                      {/* Paystack Reference Pill */}
+                      {/* Payment Reference Pill */}
                       <div className="flex items-center gap-2 pt-1 flex-wrap">
                         <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
-                          Paystack Ref:
+                          Payment Ref:
                         </span>
                         {payRef ? (
                           <div className="inline-flex items-center gap-1.5 bg-[#0F1219] border border-emerald-500/25 rounded-lg px-2.5 py-1">
@@ -933,7 +933,7 @@ const VendorOrdersFulfillment = () => {
                               type="button"
                               onClick={() => handleCopyPaymentRef(payRef)}
                               className="text-gray-400 hover:text-white p-0.5 rounded transition-colors"
-                              title="Copy Paystack reference"
+                              title="Copy payment reference"
                             >
                               {copiedRef === payRef ? (
                                 <Check size={12} className="text-emerald-400" />
@@ -944,7 +944,7 @@ const VendorOrdersFulfillment = () => {
                           </div>
                         ) : (
                           <span className="text-xs italic text-gray-500">
-                            No verified Paystack reference recorded
+                            No verified payment reference recorded
                           </span>
                         )}
                       </div>

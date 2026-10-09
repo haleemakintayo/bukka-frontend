@@ -450,7 +450,7 @@ const VendorDetails = () => {
                 <InfoRow icon={CreditCard} label="Bank Code"           value={vendor.bank_code} mono />
                 <InfoRow icon={Hash}       label="Account Number"      value={vendor.account_number} mono />
                 <InfoRow icon={User}       label="Account Name"        value={vendor.account_name} />
-                <InfoRow icon={Tag}        label="Paystack Subaccount" value={vendor.subaccount_code} mono />
+                <InfoRow icon={Tag}        label="Settlement Destination" value={vendor.bachs_destination_id || vendor.subaccount_code} mono />
                 <InfoRow icon={Tag}        label="Slug"                value={vendor.slug} mono />
                 <InfoRow icon={Hash}       label="Vendor ID"           value={vendor.vendor_id} mono />
                 <InfoRow icon={Hash}       label="Internal ID"         value={String(vendor.id ?? '—')} mono />

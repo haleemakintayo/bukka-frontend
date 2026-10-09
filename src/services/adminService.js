@@ -220,9 +220,15 @@ export const adminService = {
     return response.data;
   },
 
-  /** GET /admin/paystack/balance — Check Paystack float balance */
+  /** GET /admin/bachs/balance — Check Bachs float balance */
+  getBachsBalance: async () => {
+    const response = await apiClient.get('/admin/bachs/balance');
+    return response.data;
+  },
+
+  /** GET /admin/paystack/balance — Check Bachs balance (compatibility alias) */
   getPaystackBalance: async () => {
-    const response = await apiClient.get('/admin/paystack/balance');
+    const response = await apiClient.get('/admin/bachs/balance');
     return response.data;
   },
 

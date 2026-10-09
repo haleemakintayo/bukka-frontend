@@ -191,12 +191,12 @@ const OrderDetailDrawer = ({
                 </div>
               </div>
 
-              {/* Paystack Payment Verification & Dispute Resolution Card */}
+              {/* Payment Verification & Dispute Resolution Card */}
               <div className="bg-[#171B26] border border-white/10 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                     <ShieldCheck size={14} className={isPaid ? 'text-emerald-400' : 'text-amber-400'} />
-                    Paystack Verification Record
+                    Bachs Verification Record
                   </p>
                   <span
                     className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
@@ -212,10 +212,10 @@ const OrderDetailDrawer = ({
                 <div className="bg-[#0f1118] border border-white/10 rounded-xl p-3 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                      Paystack Reference
+                      Payment Reference
                     </p>
                     <p className="text-xs font-mono font-bold text-[#2CD6EB] truncate mt-0.5">
-                      {order.payment_reference || 'No Paystack reference recorded'}
+                      {order.payment_reference || 'No payment reference recorded'}
                     </p>
                   </div>
                   {order.payment_reference && (
@@ -223,7 +223,7 @@ const OrderDetailDrawer = ({
                       type="button"
                       onClick={() => handleCopyRef(order.payment_reference)}
                       className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-300 hover:text-white flex items-center gap-1 shrink-0 transition-colors"
-                      title="Copy Paystack Reference"
+                      title="Copy Payment Reference"
                     >
                       {copiedRef ? (
                         <>

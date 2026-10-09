@@ -112,7 +112,7 @@ const OrderAuditTransactions = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by customer name, phone, or Paystack reference..."
+            placeholder="Search by customer name, phone, or payment reference..."
             className="w-full bg-[#0f1118] border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#2CD6EB]/40 transition-colors"
           />
           {searchQuery && (
@@ -346,7 +346,7 @@ const OrderAuditTransactions = () => {
 
               {/* References */}
               <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-2">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Paystack Settlement Ref</p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Settlement Reference</p>
                 <p className="text-xs font-mono text-gray-300 select-all">{selectedTx.payment_reference || 'N/A'}</p>
               </div>
             </div>

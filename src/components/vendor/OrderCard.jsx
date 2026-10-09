@@ -96,7 +96,7 @@ const OrderCard = ({
               {order.customer_name || 'Customer'}
             </p>
             {order.payment_reference && (
-              <p className="text-[10px] font-mono text-emerald-400/90 mt-0.5 truncate max-w-[170px]" title={`Paystack Ref: ${order.payment_reference}`}>
+              <p className="text-[10px] font-mono text-emerald-400/90 mt-0.5 truncate max-w-[170px]" title={`Payment Ref: ${order.payment_reference}`}>
                 ✓ Ref: {order.payment_reference}
               </p>
             )}

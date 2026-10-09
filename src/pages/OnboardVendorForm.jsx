@@ -385,7 +385,7 @@ const OnboardVendorForm = () => {
               <CreditCard size={18} /> Settlement Details
             </h3>
             <p className="onboard-card-desc">
-              Payments are routed directly to this account via Paystack split payments.
+              Payments are routed directly to this account via Bachs settlement disbursements.
             </p>
 
             <div className="onboard-fields">

@@ -247,7 +247,7 @@ const VendorDashboard = () => {
       if (!['rejected', 'cancelled', 'abandoned'].includes(st)) return false;
     }
 
-    // Search query (supports numeric ID e.g. 1082 or #1082, order_number, phone, name, Paystack ref)
+    // Search query (supports numeric ID e.g. 1082 or #1082, order_number, phone, name, payment ref)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim().replace(/^#/, '');
       return (
@@ -284,7 +284,7 @@ const VendorDashboard = () => {
         <p className="text-sm text-gray-500 mt-1">Here's your store overview for today.</p>
       </div>
 
-      {/* ── Today's Settlement (Live Paystack Tally) ─────────────────── */}
+      {/* ── Today's Settlement (Live Bachs Tally) ─────────────────── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#FA6131] to-[#d44520] rounded-2xl md:rounded-3xl p-5 md:p-7 shadow-xl shadow-[#FA6131]/15 space-y-4">
         <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
           <Wallet size={90} className="transform translate-x-3 -translate-y-3" />
@@ -293,7 +293,7 @@ const VendorDashboard = () => {
           <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
             <p className="text-white/80 font-extrabold uppercase tracking-wider text-[10px] md:text-xs flex items-center gap-1.5">
               <ShieldCheck size={14} className="text-white" />
-              Today&apos;s Settlement · Live Paystack Tally
+              Today&apos;s Settlement · Live Bachs Tally
             </p>
             <span className="px-2.5 py-0.5 rounded-full bg-black/20 text-white/90 text-[10px] font-bold">
               Next Transfer: {settlement?.next_settlement_label || 'Today at 06:00 PM WAT'}
@@ -343,11 +343,11 @@ const VendorDashboard = () => {
           </div>
         </div>
 
-        {/* Expandable Live Paystack Transactions Tally */}
+        {/* Expandable Live Bachs Transactions Tally */}
         {showSettlementLedger && settlement?.transactions?.length > 0 && (
           <div className="relative z-10 bg-black/25 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 space-y-2 max-h-64 overflow-y-auto">
             <p className="text-[10px] font-extrabold uppercase tracking-wider text-white/80">
-              Verified Paystack Transactions Today
+              Verified Bachs Transactions Today
             </p>
             {settlement.transactions.map((tx) => (
               <div
@@ -372,7 +372,7 @@ const VendorDashboard = () => {
                         type="button"
                         onClick={(e) => handleCopyRef(tx.payment_reference, e)}
                         className="text-white/70 hover:text-white p-0.5"
-                        title="Copy Paystack Reference"
+                        title="Copy Payment Reference"
                       >
                         {copiedRef === tx.payment_reference ? <Check size={11} /> : <Copy size={11} />}
                       </button>
@@ -478,7 +478,7 @@ const VendorDashboard = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Order ID (e.g. 1082), customer phone, name, or Paystack ref..."
+            placeholder="Search by Order ID (e.g. 1082), customer phone, name, or payment ref..."
             className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#2CD6EB]/40 transition-colors"
           />
           {searchQuery && (
@@ -618,7 +618,7 @@ const VendorDashboard = () => {
                         <span
                           onClick={(e) => handleCopyRef(order.payment_reference, e)}
                           className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20"
-                          title="Click to copy verified Paystack reference"
+                          title="Click to copy verified payment reference"
                         >
                           Ref: {order.payment_reference}
                           {copiedRef === order.payment_reference ? (

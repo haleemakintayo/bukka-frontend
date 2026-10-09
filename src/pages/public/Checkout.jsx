@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { usePaystackPayment } from 'react-paystack';
 import { publicService } from '../../services/publicService';
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MessageCircle, ShieldCheck, Clock, Bike } from 'lucide-react';
 
@@ -40,6 +39,16 @@ const Checkout = () => {
 
   const vendorSlug = cartItems[0]?.vendorSlug;
 
+  // Ensure Bachs SDK is loaded
+  useEffect(() => {
+    if (!window.Bachs) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.bachs.io/bachs.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
   React.useEffect(() => {
     if (vendorSlug) {
       Promise.all([
@@ -71,34 +80,18 @@ const Checkout = () => {
   const CONVENIENCE_FEE = 50;
   const finalTotal = cartTotal + CONVENIENCE_FEE + (orderType === 'delivery' ? deliveryFee : 0);
 
-  const config = {
-    reference: paymentRef,
-    email: "student@oou.edu.ng", // Paystack requires email, we use a dummy one
-    amount: finalTotal * 100, // Paystack amount is in kobo
-    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_PLACEHOLDER_KEY",
-    metadata: {
-      order_id: createdOrderRef.current?.order_id,
-      custom_fields: [
-        {
-          display_name: "WhatsApp Number",
-          variable_name: "whatsapp_number",
-          value: formatWhatsappNumber(whatsappNumber)
-        }
-      ]
-    }
-  };
-
-  const initializePayment = usePaystackPayment(config);
-
-  const onSuccess = async (reference) => {
+  const onSuccess = async (eventData) => {
     try {
-      const txRef = reference?.reference || paymentRef;
-      const createdOrderId = createdOrderRef.current?.order_id || null;
+      const txRef = eventData?.reference || createdOrderRef.current?.payment_reference || paymentRef;
+      const checkoutId = eventData?.checkout_id || createdOrderRef.current?.bachs_checkout_id || null;
+      const createdOrderId = createdOrderRef.current?.order_id || createdOrderRef.current?.id || null;
+      
       // Verify payment with backend
-      const verified = await publicService.verifyOrderPayment(txRef, createdOrderId);
+      const verified = await publicService.verifyOrderPayment(checkoutId || txRef, createdOrderId);
       
       const receiptData = {
         reference: txRef,
+        checkoutId: checkoutId,
         orderId: verified?.order_id || createdOrderId,
         orderNumber: verified?.order_number || createdOrderRef.current?.order_number,
         items: cartItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
@@ -116,11 +109,12 @@ const Checkout = () => {
       navigate('/success', { state: receiptData });
     } catch (err) {
       console.error('Order verification failed:', err);
-      const txRef = reference?.reference || paymentRef;
+      const txRef = eventData?.reference || createdOrderRef.current?.payment_reference || paymentRef;
       const errDetail = err.response?.data?.detail || err.response?.data?.message || 'Could not verify payment with server.';
-      alert(`Payment verification failed (Ref: ${txRef}): ${errDetail}. Please keep your reference and contact support if you were debited.`);
+      alert(`Payment verification notice (Ref: ${txRef}): ${errDetail}. Please keep your reference and contact support if you were debited.`);
+    } finally {
+      setIsProcessing(false);
     }
-    setIsProcessing(false);
   };
 
   const onClose = () => {
@@ -179,11 +173,30 @@ const Checkout = () => {
       });
       createdOrderRef.current = createdOrder;
 
-      // Initialize payment
-      initializePayment(onSuccess, onClose);
+      // Open Bachs Modal Overlay
+      if (createdOrder.checkout_url && window.Bachs && window.Bachs.Checkout) {
+        window.Bachs.Checkout.open({
+          checkoutUrl: createdOrder.checkout_url,
+          onEvent: (event) => {
+            if (event.type === 'checkout.completed') {
+              onSuccess(event.data);
+            } else if (event.type === 'checkout.closed') {
+              onClose();
+            } else if (event.type === 'checkout.failed') {
+              setIsProcessing(false);
+              alert('Payment was not completed. Please try again.');
+            }
+          }
+        });
+      } else if (createdOrder.checkout_url) {
+        // Fallback: direct redirect if overlay script not mounted yet
+        window.location.href = createdOrder.checkout_url;
+      } else {
+        throw new Error('Unable to generate Bachs checkout session. Please try again.');
+      }
     } catch (err) {
       console.error('Order creation failed:', err);
-      const errorMsg = err.response?.data?.detail || err.response?.data?.message || 'We could not create your order right now. Please try again.';
+      const errorMsg = err.response?.data?.detail || err.response?.data?.message || err.message || 'We could not create your order right now. Please try again.';
       alert(errorMsg);
       setIsProcessing(false);
     }
@@ -530,7 +543,7 @@ const Checkout = () => {
           
           <p className="text-xs text-center text-gray-400 mt-3 flex items-center justify-center gap-1">
             <ShieldCheck size={12} />
-            Secured by Paystack
+            Secured by Bachs
           </p>
         </section>
 

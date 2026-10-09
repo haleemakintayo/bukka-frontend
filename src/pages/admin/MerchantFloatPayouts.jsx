@@ -29,7 +29,7 @@ const MerchantFloatPayouts = () => {
       else setRefreshing(true);
 
       const [balRes, vendorList] = await Promise.allSettled([
-        adminService.getPaystackBalance(),
+        adminService.getBachsBalance(),
         adminService.getVendors(),
       ]);
 
@@ -69,7 +69,7 @@ const MerchantFloatPayouts = () => {
       setSelectedVendorForPayout(null);
       showToast(
         'success',
-        `Same-day payout initiated! Reference: ${res.reference || res.transfer_code || 'Success'} 🚀`
+        `Same-day payout initiated! Reference: ${res.reference || res.payout_id || res.transfer_code || 'Success'} 🚀`
       );
       fetchData(true);
     } catch (err) {
@@ -107,7 +107,7 @@ const MerchantFloatPayouts = () => {
             </h2>
           </div>
           <p className="text-sm text-gray-500">
-            Monitor Paystack float liquidity and trigger manual same-day payouts to vendors.
+            Monitor Bachs float liquidity and trigger manual same-day payouts to vendors.
           </p>
         </div>
 
@@ -121,15 +121,15 @@ const MerchantFloatPayouts = () => {
         </button>
       </div>
 
-      {/* Mandatory Paystack Setting Banner */}
-      <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-5 flex items-start gap-4">
-        <ShieldAlert size={22} className="text-amber-400 shrink-0 mt-0.5" />
+      {/* Bachs Float Info Banner */}
+      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-5 flex items-start gap-4">
+        <ShieldAlert size={22} className="text-emerald-400 shrink-0 mt-0.5" />
         <div className="space-y-1 text-xs">
-          <h4 className="font-extrabold text-amber-300 text-sm">Mandatory Paystack Setting</h4>
+          <h4 className="font-extrabold text-emerald-300 text-sm">Bachs Instant Settlements</h4>
           <p className="text-gray-300 leading-relaxed">
-            To enable automated API transfers and instant disbursals, ensure OTP requirement is disabled in your Paystack Dashboard:
+            Payouts and vendor disbursements are executed directly via Bachs NGN rails. Maintain sufficient float balance in your Bachs dashboard to prevent automated batch payout interruptions:
             <span className="font-mono text-white bg-black/40 px-2 py-0.5 rounded border border-white/10 ml-1">
-              Settings → Transfers → Disable OTP requirement
+              Bachs Dashboard → Balances → Fund NGN Float
             </span>
           </p>
         </div>
@@ -138,7 +138,7 @@ const MerchantFloatPayouts = () => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 size={32} className="animate-spin text-[#FA6131]" />
-          <p className="text-sm text-gray-500 font-medium">Checking Paystack float liquidity…</p>
+          <p className="text-sm text-gray-500 font-medium">Checking Bachs float liquidity…</p>
         </div>
       ) : error ? (
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl p-6 text-center">
@@ -152,12 +152,12 @@ const MerchantFloatPayouts = () => {
         </div>
       ) : (
         <>
-          {/* Paystack Float Balance Card */}
+          {/* Bachs Float Balance Card */}
           <div className="relative overflow-hidden bg-gradient-to-br from-[#171B26] to-[#1e2333] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">
-                  Paystack Merchant NGN Float Balance
+                  Bachs Merchant NGN Float Balance
                 </p>
                 <h3 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
                   {formatMoney(balanceData?.ngn_balance_naira)}
@@ -216,8 +216,8 @@ const MerchantFloatPayouts = () => {
                         {vendor.account_number && (
                           <span>Acct: <strong className="text-gray-300">{vendor.account_number}</strong> ({vendor.bank_code || 'Bank'})</span>
                         )}
-                        {vendor.subaccount_code && (
-                          <span>Subacct: <strong className="text-gray-300">{vendor.subaccount_code}</strong></span>
+                        {(vendor.bachs_destination_id || vendor.subaccount_code) && (
+                          <span>Destination: <strong className="text-gray-300">{vendor.bachs_destination_id || vendor.subaccount_code}</strong></span>
                         )}
                       </div>
                     </div>
@@ -249,7 +249,7 @@ const MerchantFloatPayouts = () => {
             <div className="text-center">
               <h3 className="text-lg font-extrabold text-white">Trigger Payout for {selectedVendorForPayout.business_name}?</h3>
               <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                This will calculate unpaid completed orders for this vendor and initiate a Paystack transfer directly to their bank account ({selectedVendorForPayout.account_number || 'NUBAN'}).
+                This will calculate unpaid completed orders for this vendor and initiate a Bachs transfer directly to their bank account ({selectedVendorForPayout.account_number || 'NUBAN'}).
               </p>
             </div>
             <div className="flex gap-3 pt-2">

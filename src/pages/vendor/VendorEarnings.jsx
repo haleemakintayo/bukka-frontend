@@ -75,7 +75,7 @@ const VendorEarnings = () => {
             Today's Settlement & Earnings
           </h2>
           <p className="text-xs text-gray-500 mt-1">
-            Live tally of verified Paystack transactions waiting for end-of-day bank transfer.
+            Live tally of verified Bachs transactions waiting for end-of-day bank transfer.
           </p>
         </div>
 
@@ -141,7 +141,7 @@ const VendorEarnings = () => {
               </h2>
 
               <p className="text-xs text-white/85">
-                Live tally of verified Paystack transactions since midnight WAT waiting for your{' '}
+                Live tally of verified Bachs transactions since midnight WAT waiting for your{' '}
                 <strong>{settlement?.next_settlement_label || '06:00 PM WAT'}</strong> automated bank transfer.
                 {settlement?.bank_account_summary && (
                   <span className="block mt-1 text-white/95 font-semibold">
@@ -179,17 +179,17 @@ const VendorEarnings = () => {
             </div>
           </div>
 
-          {/* Live Verified Paystack Transactions Ledger */}
+          {/* Live Verified Bachs Transactions Ledger */}
           <div className="bg-[#1e2333] border border-white/5 rounded-3xl p-5 md:p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
               <div className="flex items-center gap-2">
                 <CreditCard size={20} className="text-[#2CD6EB]" />
                 <div>
                   <h3 className="text-base md:text-lg font-extrabold text-white">
-                    Verified Paystack Transactions Today
+                    Verified Bachs Transactions Today
                   </h3>
                   <p className="text-[11px] text-gray-400">
-                    Every transaction below is verified by Paystack and queued for end-of-day settlement.
+                    Every transaction below is verified via Bachs and queued for end-of-day settlement.
                   </p>
                 </div>
               </div>
@@ -202,10 +202,10 @@ const VendorEarnings = () => {
               <div className="py-10 text-center space-y-2">
                 <Wallet size={28} className="mx-auto text-gray-600" />
                 <p className="text-sm font-bold text-gray-400">
-                  No verified Paystack transactions recorded since midnight yet.
+                  No verified Bachs transactions recorded since midnight yet.
                 </p>
                 <p className="text-xs text-gray-500">
-                  Paid customer orders appear here immediately upon Paystack verification.
+                  Paid customer orders appear here immediately upon Bachs verification.
                 </p>
               </div>
             ) : (
@@ -295,7 +295,7 @@ const VendorEarnings = () => {
             <div className="space-y-1 text-xs">
               <h4 className="font-bold text-white text-sm">Same-Day Automated Disbursals</h4>
               <p className="text-gray-400 leading-relaxed">
-                Earnings from verified Paystack orders are automatically credited directly to your registered NUBAN bank account daily at 6:00 PM WAT via Paystack Direct Transfers.
+                Earnings from verified Bachs orders are automatically credited directly to your registered NUBAN bank account daily at 6:00 PM WAT via Bachs Automated Payouts.
               </p>
             </div>
           </div>

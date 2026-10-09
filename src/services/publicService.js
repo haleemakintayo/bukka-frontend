@@ -47,8 +47,19 @@ export const publicService = {
     return response.data;
   },
 
-  verifyOrderPayment: async (reference, orderId = null) => {
-    const payload = { reference };
+  verifyOrderPayment: async (referenceOrCheckoutId, orderId = null) => {
+    const payload = {};
+    if (typeof referenceOrCheckoutId === 'string') {
+      if (referenceOrCheckoutId.startsWith('chk_')) {
+        payload.checkout_id = referenceOrCheckoutId;
+      } else {
+        payload.reference = referenceOrCheckoutId;
+      }
+    } else if (referenceOrCheckoutId && typeof referenceOrCheckoutId === 'object') {
+      if (referenceOrCheckoutId.checkout_id) payload.checkout_id = referenceOrCheckoutId.checkout_id;
+      if (referenceOrCheckoutId.reference) payload.reference = referenceOrCheckoutId.reference;
+    }
+
     if (orderId !== null && orderId !== undefined) {
       payload.order_id = orderId;
     }
