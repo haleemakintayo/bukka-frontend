@@ -7,6 +7,20 @@ export const vendorService = {
     return response.data;
   },
 
+  /** GET /vendors/resolve-bank — verify Nigerian bank account */
+  resolveBank: async (accountNumber, bankCode) => {
+    const response = await apiClient.get('/vendors/resolve-bank', {
+      params: { account_number: accountNumber, bank_code: bankCode },
+    });
+    return response.data;
+  },
+
+  /** POST /vendors/register — public self-onboarding */
+  selfRegister: async (payload) => {
+    const response = await apiClient.post('/vendors/register', payload);
+    return response.data;
+  },
+
   getDashboard: async () => {
     const response = await apiClient.get('/vendors/me/dashboard');
     return response.data;

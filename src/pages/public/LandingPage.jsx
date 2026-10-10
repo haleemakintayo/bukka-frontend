@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   QrCode,
   MessageCircle,
@@ -256,13 +257,13 @@ const LandingPage = () => {
 
               {/* Tactile CTAs */}
               <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <a
-                  href="https://wa.me/2349060251750"
+                <Link
+                  to="/onboard"
                   className="inline-flex items-center justify-center gap-2 font-display font-extrabold text-base sm:text-lg uppercase tracking-wide bg-[#FA6131] hover:bg-[#ff7244] text-white px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border-2 sm:border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
                 >
-                  <span>Join the Beta</span>
+                  <span>Set Up Your Bukka ⚡</span>
                   <ArrowRight size={18} className="stroke-[3]" />
-                </a>
+                </Link>
                 <a
                   href="#how-it-works"
                   className="inline-flex items-center justify-center font-display font-bold text-base sm:text-lg text-black dark:text-white bg-white dark:bg-[#1C2230] hover:bg-gray-100 dark:hover:bg-[#262C3A] px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border-2 sm:border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
@@ -584,13 +585,13 @@ const LandingPage = () => {
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
-              <a
-                href="https://wa.me/2349060251750"
+              <Link
+                to="/onboard"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 font-display font-black text-lg bg-white hover:bg-[#FFE600] text-black rounded-xl border-3 border-black shadow-[4px_4px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
               >
                 <Wallet size={22} className="stroke-[2.5]" />
-                <span>Get Started on WhatsApp ⚡</span>
-              </a>
+                <span>Set Up Your Kitchen ⚡</span>
+              </Link>
             </div>
 
             {/* Micro guarantee badge */}

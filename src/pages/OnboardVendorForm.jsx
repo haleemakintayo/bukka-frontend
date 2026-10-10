@@ -1,179 +1,251 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import {
-  Trash2, Plus, CheckCircle, ExternalLink, QrCode,
-  Link2, Store, User, Phone, Mail, Lock, CreditCard,
-  Building2, Hash, ChefHat, Copy, Check, ArrowLeft
+  Store, Phone, KeyRound, MapPin, Clock, Package,
+  Truck, CreditCard, ChefHat, Check, CheckCircle2,
+  ChevronRight, ChevronLeft, Loader2, Sparkles, Plus,
+  Trash2, Copy, ExternalLink, QrCode, ArrowRight,
+  ShieldCheck, AlertCircle, MessageCircle
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { vendorService } from '../services/vendorService';
 import { adminService } from '../services/adminService';
 import { getApiErrorMessage, resolveAssetUrl } from '../services/api';
 
-/* ── Helpers ───────────────────────────────────────────────────────── */
+/* ── Nigerian Banks Catalog ─────────────────────────────────────────── */
+const NIGERIAN_BANKS = [
+  { name: 'Opay', code: '090267' },
+  { name: 'Palmpay', code: '090275' },
+  { name: 'Moniepoint', code: '090405' },
+  { name: 'Kuda Bank', code: '50211' },
+  { name: 'Guaranty Trust Bank (GTBank)', code: '058' },
+  { name: 'Access Bank', code: '044' },
+  { name: 'United Bank for Africa (UBA)', code: '033' },
+  { name: 'Zenith Bank', code: '057' },
+  { name: 'First Bank of Nigeria', code: '011' },
+  { name: 'Wema Bank / ALAT', code: '035' },
+  { name: 'Fidelity Bank', code: '070' },
+  { name: 'First City Monument Bank (FCMB)', code: '214' },
+  { name: 'Stanbic IBTC Bank', code: '221' },
+  { name: 'Union Bank of Nigeria', code: '032' },
+  { name: 'Sterling Bank', code: '232' },
+  { name: 'Polaris Bank', code: '076' },
+  { name: 'Providus Bank', code: '101' },
+  { name: 'Ecobank Nigeria', code: '050' },
+  { name: 'Keystone Bank', code: '082' },
+];
+
+/* ── Campus Presets ──────────────────────────────────────────────────── */
+const CAMPUS_PRESETS = [
+  'UNILAG — New Hall Quadrangle',
+  'UNILAG — Faculty of Science',
+  'UI — Queen Idia / Mellanby',
+  'FUTA — South Gate',
+  'OAU — Mozambique / Angola',
+  'Babcock — Amphitheatre',
+  'Covenant — Cafeteria 1',
+];
+
+/* ── Menu Preset Starters ────────────────────────────────────────────── */
+const STARTER_MENU_PRESETS = [
+  { name: 'Jollof Rice & Chicken', price: 2500, category: 'Rice' },
+  { name: 'Fried Rice & Beef', price: 2200, category: 'Rice' },
+  { name: 'Amala & Gbegiri / Ewedu', price: 2000, category: 'Swallow' },
+  { name: 'Chicken Shawarma', price: 1800, category: 'Grills & Snacks' },
+  { name: 'Cold Soft Drink', price: 500, category: 'Drinks' },
+];
+
 const slugify = (text) =>
-  text.toString().toLowerCase().trim()
+  String(text || '')
+    .toLowerCase()
+    .trim()
     .replace(/\s+/g, '-')
     .replace(/[^\w-]+/g, '')
     .replace(/--+/g, '-');
 
-const NIGERIAN_BANKS = [
-  { name: 'Access Bank', code: '044' },
-  { name: 'Citibank', code: '023' },
-  { name: 'Diamond Bank', code: '063' },
-  { name: 'Ecobank Nigeria', code: '050' },
-  { name: 'Fidelity Bank', code: '070' },
-  { name: 'First Bank of Nigeria', code: '011' },
-  { name: 'First City Monument Bank', code: '214' },
-  { name: 'Guaranty Trust Bank', code: '058' },
-  { name: 'Heritage Bank', code: '030' },
-  { name: 'Keystone Bank', code: '082' },
-  { name: 'Polaris Bank', code: '076' },
-  { name: 'Providus Bank', code: '101' },
-  { name: 'Stanbic IBTC Bank', code: '221' },
-  { name: 'Standard Chartered Bank', code: '068' },
-  { name: 'Sterling Bank', code: '232' },
-  { name: 'Suntrust Bank', code: '100' },
-  { name: 'Union Bank of Nigeria', code: '032' },
-  { name: 'United Bank for Africa', code: '033' },
-  { name: 'Unity Bank', code: '215' },
-  { name: 'Wema Bank', code: '035' },
-  { name: 'Zenith Bank', code: '057' },
-  { name: 'Kuda Bank', code: '50211' },
-  { name: 'Opay', code: '090267' },
-  { name: 'Palmpay', code: '090275' },
-  { name: 'Moniepoint', code: '090405' },
+const STEPS = [
+  { id: 'profile', title: 'Store & WhatsApp', icon: Store },
+  { id: 'fulfillment', title: 'Campus Delivery', icon: Truck },
+  { id: 'banking', title: 'Bank Account', icon: CreditCard },
+  { id: 'menu', title: 'Starter Menu', icon: ChefHat },
 ];
 
-/* ── Reusable field component ──────────────────────────────────────── */
-const Field = ({ label, icon: Icon, children, hint, required }) => (
-  <div>
-    <label className="onboard-label">
-      {Icon && <Icon size={14} className="onboard-label-icon" />}
-      {label}
-      {required && <span className="onboard-required">*</span>}
-    </label>
-    {children}
-    {hint && <p className="onboard-hint">{hint}</p>}
-  </div>
-);
-
-/* ── Step indicator ────────────────────────────────────────────────── */
-const StepIndicator = ({ currentStep, steps }) => (
-  <div className="onboard-steps">
-    {steps.map((step, i) => (
-      <div key={step.label} className="onboard-step-item">
-        <div className={`onboard-step-circle ${i < currentStep ? 'onboard-step-done' : i === currentStep ? 'onboard-step-active' : ''}`}>
-          {i < currentStep ? <Check size={14} /> : <span>{i + 1}</span>}
-        </div>
-        <span className={`onboard-step-label ${i <= currentStep ? 'onboard-step-label-active' : ''}`}>
-          {step.label}
-        </span>
-        {i < steps.length - 1 && <div className={`onboard-step-line ${i < currentStep ? 'onboard-step-line-done' : ''}`} />}
-      </div>
-    ))}
-  </div>
-);
-
-/* ═══════════════════════════════════════════════════════════════════════
-   MAIN COMPONENT
-   ═══════════════════════════════════════════════════════════════════════ */
 const OnboardVendorForm = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
-    business_name: '', owner_name: '', whatsapp_number: '', slug: '',
-    bank_code: '', account_number: '', account_name: '',
-    email: '', password: ''
-  });
-  const [isSlugEditedManually, setIsSlugEditedManually] = useState(false);
-  const [menuItems, setMenuItems] = useState([{ name: '', price: '', category: '' }]);
+
+  // Form State
+  const [businessName, setBusinessName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [isSlugManual, setIsSlugManual] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [pin, setPin] = useState('');
+  const [location, setLocation] = useState('');
+
+  // Fulfillment State
+  const [containerCost, setContainerCost] = useState(150);
+  const [offersDelivery, setOffersDelivery] = useState(true);
+  const [offersPickup, setOffersPickup] = useState(true);
+  const [deliveryFee, setDeliveryFee] = useState(300);
+  const [openingTime, setOpeningTime] = useState('08:00');
+  const [closingTime, setClosingTime] = useState('22:00');
+
+  // Banking State
+  const [bankCode, setBankCode] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [resolvingBank, setResolvingBank] = useState(false);
+  const [bankResolved, setBankResolved] = useState(false);
+  const [bankResolveError, setBankResolveError] = useState(null);
+
+  // Menu State
+  const [menuItems, setMenuItems] = useState([
+    { name: 'Jollof Rice & Chicken', price: 2500, category: 'Rice' },
+  ]);
+
+  // Submission State
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successData, setSuccessData] = useState(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
-  const STEPS = [
-    { label: 'Business', icon: Store },
-    { label: 'Banking', icon: CreditCard },
-    { label: 'Menu', icon: ChefHat },
-  ];
-
+  // Auto-slug generation
   useEffect(() => {
-    if (!isSlugEditedManually && formData.business_name) {
-      setFormData(prev => ({ ...prev, slug: slugify(prev.business_name) }));
+    if (!isSlugManual && businessName) {
+      setSlug(slugify(businessName));
     }
-  }, [formData.business_name, isSlugEditedManually]);
+  }, [businessName, isSlugManual]);
 
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'slug') {
-      setIsSlugEditedManually(true);
-      setFormData(prev => ({ ...prev, [name]: slugify(value) }));
+  // Real-time Bank Resolution
+  const handleResolveBank = useCallback(async (num, code) => {
+    if (num.length === 10 && code) {
+      setResolvingBank(true);
+      setBankResolveError(null);
+      try {
+        const res = await vendorService.resolveBank(num, code);
+        if (res?.account_name) {
+          setAccountName(res.account_name);
+          setBankResolved(true);
+        }
+      } catch (err) {
+        setBankResolved(false);
+        setBankResolveError('Could not auto-verify account name. You can enter it manually below.');
+      } finally {
+        setResolvingBank(false);
+      }
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setBankResolved(false);
+    }
+  }, []);
+
+  const handleAccountNumberChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setAccountNumber(val);
+    if (val.length === 10 && bankCode) {
+      handleResolveBank(val, bankCode);
     }
   };
 
-  const handleMenuChange = (index, e) => {
-    const newItems = [...menuItems];
-    newItems[index][e.target.name] = e.target.value;
-    setMenuItems(newItems);
+  const handleBankCodeChange = (e) => {
+    const val = e.target.value;
+    setBankCode(val);
+    if (accountNumber.length === 10 && val) {
+      handleResolveBank(accountNumber, val);
+    }
   };
 
-  const addMenuItem = () => setMenuItems([...menuItems, { name: '', price: '', category: '' }]);
-
-  const removeMenuItem = (index) => {
-    const newItems = [...menuItems];
-    newItems.splice(index, 1);
-    setMenuItems(newItems);
+  // Add / Remove Starter Menu Items
+  const handleAddPresetItem = (preset) => {
+    if (!menuItems.some((i) => i.name.toLowerCase() === preset.name.toLowerCase())) {
+      setMenuItems([...menuItems, { ...preset }]);
+    }
   };
 
+  const handleCustomItemChange = (index, field, value) => {
+    const updated = [...menuItems];
+    updated[index][field] = value;
+    setMenuItems(updated);
+  };
+
+  const handleRemoveMenuItem = (index) => {
+    setMenuItems(menuItems.filter((_, i) => i !== index));
+  };
+
+  const handleAddNewMenuItem = () => {
+    setMenuItems([...menuItems, { name: '', price: '', category: 'Main Meal' }]);
+  };
+
+  // Form Validation per Step
   const canAdvance = () => {
     if (currentStep === 0) {
-      return formData.business_name && formData.owner_name && formData.whatsapp_number;
+      return businessName.trim().length >= 2 &&
+        ownerName.trim().length >= 2 &&
+        whatsappNumber.replace(/\D/g, '').length >= 10 &&
+        pin.trim().length === 4;
     }
     if (currentStep === 1) {
-      return formData.bank_code && formData.account_number && formData.account_name;
+      return (offersDelivery || offersPickup) && openingTime && closingTime;
+    }
+    if (currentStep === 2) {
+      return bankCode && accountNumber.length === 10 && accountName.trim().length >= 2;
     }
     return true;
   };
 
+  // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSuccessData(null);
+
+    const formattedHours = `${openingTime} – ${closingTime}`;
+    const cleanPhone = whatsappNumber.replace(/\D/g, '');
 
     const payload = {
-      business_name: formData.business_name,
-      owner_name: formData.owner_name,
-      whatsapp_number: formData.whatsapp_number,
-      slug: formData.slug,
-      bank_code: formData.bank_code,
-      account_number: formData.account_number,
-      account_name: formData.account_name,
-      email: formData.email,
-      password: formData.password,
-      menu_items: menuItems.filter(item => item.name && item.price),
+      business_name: businessName.trim(),
+      owner_name: ownerName.trim(),
+      slug: slug || slugify(businessName),
+      whatsapp_number: cleanPhone,
+      pin: pin.trim(),
+      location: location.trim() || undefined,
+      hours: formattedHours,
+      container_cost: Number(containerCost) || 0,
+      offers_delivery: Boolean(offersDelivery),
+      offers_pickup: Boolean(offersPickup),
+      delivery_fee: offersDelivery ? Number(deliveryFee) || 0 : 0,
+      bank_code: bankCode,
+      account_number: accountNumber,
+      account_name: accountName.trim(),
+      menu_items: menuItems
+        .filter((item) => item.name && item.price !== '')
+        .map((item) => ({
+          name: item.name.trim(),
+          price: Number(item.price),
+          category: item.category?.trim() || 'General',
+        })),
     };
 
     try {
-      const response = await adminService.onboardVendor(payload);
+      const isAdmin = Boolean(sessionStorage.getItem('admin_access_token'));
+      let res;
+      if (isAdmin) {
+        res = await adminService.onboardVendor(payload);
+      } else {
+        res = await vendorService.selfRegister(payload);
+      }
+
       setSuccessData({
-        ...response,
-        submitted_slug: response.slug || formData.slug || slugify(formData.business_name),
-        business_name: formData.business_name,
+        ...res,
+        business_name: businessName,
+        whatsapp_number: cleanPhone,
+        slug: res.slug || slug || slugify(businessName),
+        pin: pin.trim(),
       });
-      setFormData({
-        business_name: '', owner_name: '', whatsapp_number: '', slug: '',
-        bank_code: '', account_number: '', account_name: '', email: '', password: ''
-      });
-      setMenuItems([{ name: '', price: '', category: '' }]);
-      setIsSlugEditedManually(false);
-      setCurrentStep(0);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      console.error('Error submitting form:', err);
-      setError(getApiErrorMessage(err, 'An unexpected error occurred.'));
+      console.error('Onboarding failed:', err);
+      setError(getApiErrorMessage(err, 'Failed to complete registration. Please check details and try again.'));
     } finally {
       setLoading(false);
     }
@@ -187,820 +259,758 @@ const OnboardVendorForm = () => {
     }
   };
 
-  const storefrontSlug = successData?.slug || successData?.submitted_slug;
-  const qrImageUrl = resolveAssetUrl(successData?.qr_image_url);
+  const handleCopyOrderLink = () => {
+    if (successData?.slug) {
+      const link = `https://wa.me/?text=Hello,%20I%20want%20to%20order%20from%20${successData.slug}`;
+      navigator.clipboard.writeText(link);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
 
-  /* ── Success State ─────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════════════════
+     SUCCESS STATE (1-Tap WhatsApp Connect & Launchpad)
+     ═══════════════════════════════════════════════════════════════════════ */
   if (successData) {
+    const qrImageUrl = resolveAssetUrl(successData.qr_image_url);
+    const waLinkUrl = successData.whatsapp_link_url || `https://wa.me/?text=%2Flink%20${successData.pairing_code}`;
+
     return (
-      <div className="onboard-root">
-        <style>{onboardStyles}</style>
-        <div className="onboard-success-card">
-          {/* Success header */}
-          <div className="onboard-success-header">
-            <div className="onboard-success-icon">
-              <CheckCircle size={32} />
+      <div className="min-h-screen bg-[#0f1118] text-white flex flex-col justify-center py-12 px-4 sm:px-6">
+        <div className="max-w-xl mx-auto w-full space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 rounded-3xl bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto text-green-400 shadow-xl shadow-green-500/10">
+              <CheckCircle2 size={36} />
             </div>
-            <h2 className="onboard-success-title">
-              {successData.business_name || 'Vendor'} is live
-            </h2>
-            <p className="onboard-success-desc">
-              The storefront, AI menu, and payment system are now active.
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              {successData.business_name} is Ready! 🚀
+            </h1>
+            <p className="text-sm text-gray-400 max-w-md mx-auto">
+              Your store is provisioned for WhatsApp food ordering. Follow the simple step below to link your WhatsApp alerts.
             </p>
           </div>
 
-          {/* Info panels */}
-          <div className="onboard-success-panels">
-            {/* QR Panel */}
-            <div className="onboard-panel">
-              <div className="onboard-panel-header">
-                <QrCode size={16} />
-                <span>Storefront QR</span>
+          {/* Step 1: 1-Tap WhatsApp Link Button (Hero Action) */}
+          <div className="bg-[#171B26] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#25D366]/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex items-center gap-2.5 text-xs font-extrabold uppercase tracking-widest text-[#25D366]">
+              <MessageCircle size={16} />
+              Step 1 · Connect WhatsApp Bot
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold text-white mb-1">
+                Link Incoming Kitchen Alerts
+              </h3>
+              <p className="text-xs text-gray-400">
+                Tap below to open WhatsApp on this device and send the pre-filled verification command.
+              </p>
+            </div>
+
+            <a
+              href={waLinkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-black font-extrabold text-base shadow-xl shadow-[#25D366]/25 transition-all transform hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <MessageCircle size={22} className="text-black" />
+              <span>Connect WhatsApp in 1 Tap</span>
+            </a>
+
+            {/* Manual Code Fallback */}
+            <div className="bg-[#0f1118] border border-white/5 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs">
+              <div className="space-y-0.5">
+                <span className="text-gray-500 font-medium">Or send manually on WhatsApp:</span>
+                <div className="font-mono font-bold text-white tracking-wider">
+                  /link {successData.pairing_code}
+                </div>
               </div>
-              {qrImageUrl && (
-                <img src={qrImageUrl} alt="Store QR" className="onboard-qr-img" />
-              )}
-              {storefrontSlug ? (
-                <a
-                  href={`/order/${storefrontSlug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="onboard-store-link"
-                >
-                  bukkaai.com.ng/order/{storefrontSlug}
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-bold flex items-center gap-1.5 transition-colors shrink-0"
+              >
+                {copiedCode ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+                <span>{copiedCode ? 'Copied' : 'Copy'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Step 2: Vendor Dashboard & Storefront */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Enter Dashboard */}
+            <div className="bg-[#171B26] border border-white/10 rounded-3xl p-5 flex flex-col justify-between space-y-4">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-400 flex items-center gap-1">
+                  <ShieldCheck size={12} />
+                  Vendor PWA Portal
+                </span>
+                <h4 className="text-sm font-bold text-white mt-1">
+                  Manage Live Orders & Menu
+                </h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  Sign in using your WhatsApp number and the 4-digit PIN you just created.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/vendor/login')}
+                className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+              >
+                <span>Go to Vendor Login</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+
+            {/* Customer Storefront Link */}
+            <div className="bg-[#171B26] border border-white/10 rounded-3xl p-5 flex flex-col justify-between space-y-4">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FA6131] flex items-center gap-1">
                   <ExternalLink size={12} />
-                </a>
-              ) : (
-                <p className="onboard-panel-note">
-                  Storefront link will appear after provisioning.
+                  Ordering Storefront
+                </span>
+                <h4 className="text-sm font-bold text-white mt-1">
+                  Your WhatsApp Menu Link
+                </h4>
+                <p className="text-xs text-gray-500 mt-1 font-mono truncate">
+                  bukka.ai/order/{successData.slug}
                 </p>
-              )}
-              <p className="onboard-panel-hint">Print this and place on tables</p>
-            </div>
-
-            {/* Pairing Panel */}
-            <div className="onboard-panel onboard-panel-pairing">
-              <div className="onboard-panel-header">
-                <Phone size={16} />
-                <span>Device Pairing</span>
               </div>
-              {successData.pairing_code ? (
-                <>
-                  <div className="onboard-pairing-code">
-                    {successData.pairing_code}
-                  </div>
-                  <p className="onboard-pairing-instruction">
-                    The vendor must message the bot on WhatsApp and send:
-                  </p>
-                  <div className="onboard-pairing-command">
-                    <code>/link {successData.pairing_code}</code>
-                    <button onClick={handleCopyCode} className="onboard-copy-btn">
-                      {copiedCode ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <p className="onboard-panel-note">
-                  No pairing code was returned. Manage this vendor from the directory.
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/order/${successData.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 rounded-xl bg-[#FA6131]/10 hover:bg-[#FA6131]/20 border border-[#FA6131]/30 text-[#FA6131] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <ExternalLink size={13} />
+                  <span>Preview</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={handleCopyOrderLink}
+                  className="px-3.5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-bold text-xs transition-colors shrink-0"
+                  title="Copy ordering link"
+                >
+                  {copiedLink ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="onboard-success-actions">
-            <button onClick={() => setSuccessData(null)} className="onboard-btn-primary">
-              Onboard Another Vendor
-            </button>
-            <button onClick={() => navigate('/admin/vendors')} className="onboard-btn-secondary">
-              Go to Directory
-            </button>
-          </div>
+          {/* QR Code Presentation if available */}
+          {qrImageUrl && (
+            <div className="bg-[#171B26] border border-white/10 rounded-3xl p-5 flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <QrCode size={15} className="text-[#2CD6EB]" />
+                  Table Order QR Code
+                </span>
+                <p className="text-xs text-gray-500 max-w-xs">
+                  Print and place this on your student counter or dining tables for 1-tap WhatsApp ordering.
+                </p>
+              </div>
+              <img
+                src={qrImageUrl}
+                alt="Store QR"
+                className="w-16 h-16 rounded-xl bg-white p-1 object-contain shrink-0 border border-white/10"
+              />
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  /* ── Form State ────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════════════════
+     MULTI-STEP FORM STATE
+     ═══════════════════════════════════════════════════════════════════════ */
   return (
-    <div className="onboard-root">
-      <style>{onboardStyles}</style>
+    <div className="min-h-screen bg-[#0f1118] text-white py-8 px-4 sm:px-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Navigation & Header */}
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Home</span>
+          </Link>
+          <div className="text-right">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-[#FA6131]">
+              WhatsApp-First Kitchen
+            </span>
+          </div>
+        </div>
 
-      {/* Header */}
-      <div className="onboard-page-header">
-        <button onClick={() => navigate('/admin/vendors')} className="onboard-back-btn">
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="onboard-page-title">Onboard Vendor</h1>
-          <p className="onboard-page-desc">
-            Create a digital storefront with AI-powered menu and payments
+        {/* Page Title */}
+        <div className="text-center space-y-2 pt-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Set Up Your Bukka in 2 Minutes ⚡
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-400 max-w-md mx-auto">
+            Receive orders on WhatsApp, charge campus pack fees, and get automated daily bank payouts.
           </p>
         </div>
-      </div>
 
-      {/* Step indicator */}
-      <StepIndicator currentStep={currentStep} steps={STEPS} />
+        {/* Step Progress Tracker */}
+        <div className="bg-[#171B26] border border-white/10 rounded-2xl p-2.5 grid grid-cols-4 gap-1.5 shadow-xl">
+          {STEPS.map((s, idx) => {
+            const Icon = s.icon;
+            const isDone = idx < currentStep;
+            const isActive = idx === currentStep;
 
-      {/* Error */}
-      {error && (
-        <div className="onboard-error">
-          <strong>Error: </strong>{error}
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  if (idx < currentStep) setCurrentStep(idx);
+                }}
+                disabled={idx > currentStep}
+                className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl text-center transition-all ${
+                  isActive
+                    ? 'bg-[#FA6131]/15 text-[#FA6131] border border-[#FA6131]/30'
+                    : isDone
+                    ? 'text-green-400 hover:bg-white/[0.03]'
+                    : 'text-gray-500 opacity-60'
+                }`}
+              >
+                <div className="flex items-center justify-center">
+                  {isDone ? (
+                    <Check size={16} className="text-green-400" />
+                  ) : (
+                    <Icon size={16} />
+                  )}
+                </div>
+                <span className="text-[10px] font-bold tracking-tight line-clamp-1">
+                  {s.title}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      )}
 
-      <form onSubmit={handleSubmit} autoComplete="off">
-        {/* Step 0: Business Profile */}
-        {currentStep === 0 && (
-          <div className="onboard-card">
-            <h3 className="onboard-card-title">
-              <Store size={18} /> Business Profile
-            </h3>
-
-            <div className="onboard-fields">
-              <Field label="Business Name" icon={Store} required>
-                <input
-                  type="text" name="business_name" id="onboard_business_name"
-                  value={formData.business_name} onChange={handleFormChange}
-                  required placeholder="e.g. Iya Basira Amala"
-                  autoComplete="off" className="onboard-input"
-                />
-              </Field>
-
-              <Field label="Store Link (Slug)" icon={Link2} hint={
-                formData.slug ? `bukkaai.com.ng/order/${formData.slug}` : 'Auto-generated from business name'
-              }>
-                <input
-                  type="text" name="slug" id="onboard_slug"
-                  value={formData.slug} onChange={handleFormChange}
-                  placeholder="e.g. iya-basira-amala"
-                  autoComplete="off" className="onboard-input"
-                />
-              </Field>
-
-              <Field label="Owner Full Name" icon={User} required>
-                <input
-                  type="text" name="owner_name" id="onboard_owner_name"
-                  value={formData.owner_name} onChange={handleFormChange}
-                  required autoComplete="off" className="onboard-input"
-                  placeholder="Full name of the vendor owner"
-                />
-              </Field>
-
-              <div className="onboard-row">
-                <Field label="WhatsApp Number" icon={Phone} required>
-                  <input
-                    type="tel" name="whatsapp_number" id="onboard_whatsapp_number"
-                    value={formData.whatsapp_number} onChange={handleFormChange}
-                    required autoComplete="off" placeholder="2348012345678"
-                    className="onboard-input"
-                  />
-                </Field>
-                <Field label="Email (Optional)" icon={Mail}>
-                  <input
-                    type="email" name="email" id="onboard_email"
-                    value={formData.email} onChange={handleFormChange}
-                    autoComplete="off" className="onboard-input"
-                    placeholder="vendor@email.com"
-                  />
-                </Field>
-              </div>
-
-              <Field label="Initial Password (Optional)" icon={Lock} hint="Leave blank to auto-generate">
-                <input
-                  type="password" name="password" id="onboard_password"
-                  value={formData.password} onChange={handleFormChange}
-                  autoComplete="new-password" className="onboard-input"
-                  placeholder="••••••••"
-                />
-              </Field>
-            </div>
+        {/* Error Notification */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl p-4 text-xs font-bold flex items-center gap-2.5">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Step 1: Banking */}
-        {currentStep === 1 && (
-          <div className="onboard-card">
-            <h3 className="onboard-card-title">
-              <CreditCard size={18} /> Settlement Details
-            </h3>
-            <p className="onboard-card-desc">
-              Payments are routed directly to this account via Bachs settlement disbursements.
-            </p>
+        {/* Form Container */}
+        <form onSubmit={handleSubmit} className="bg-[#171B26] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+          {/* ── STEP 0: Store & WhatsApp Profile ────────────────────────────── */}
+          {currentStep === 0 && (
+            <div className="space-y-5 animate-in fade-in duration-200">
+              <div className="border-b border-white/5 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Store size={18} className="text-[#FA6131]" />
+                  Kitchen & WhatsApp Details
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Basic store identity and the phone number that will receive incoming order notifications.
+                </p>
+              </div>
 
-            <div className="onboard-fields">
-              <Field label="Bank Name" icon={Building2} required>
+              {/* Business Name */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-300">
+                  Business / Kitchen Name <span className="text-[#FA6131]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Iya Basira Amala, Taste of Ghana"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  className="w-full bg-[#0f1118] border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-[#FA6131] transition-colors"
+                />
+                {slug && (
+                  <p className="text-[11px] text-gray-500 font-mono">
+                    Store URL: bukka.ai/order/{slug}
+                  </p>
+                )}
+              </div>
+
+              {/* Owner Full Name */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-300">
+                  Owner / Manager Full Name <span className="text-[#FA6131]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sade Afolabi"
+                  value={ownerName}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                  className="w-full bg-[#0f1118] border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-[#FA6131] transition-colors"
+                />
+              </div>
+
+              {/* Campus Location */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+                  <MapPin size={13} className="text-[#2CD6EB]" />
+                  Campus & Kitchen Location
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. UNILAG New Hall Quadrangle, OAU Mozambique"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full bg-[#0f1118] border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-[#2CD6EB] transition-colors"
+                />
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {CAMPUS_PRESETS.slice(0, 3).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setLocation(p)}
+                      className="text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-400 px-2 py-1 rounded-lg border border-white/5 transition-colors"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* WhatsApp Number & PIN Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* WhatsApp Phone */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+                    <Phone size={13} className="text-green-400" />
+                    WhatsApp Phone <span className="text-[#FA6131]">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                      🇳🇬 +234
+                    </span>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="8012345678"
+                      value={whatsappNumber}
+                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      className="w-full bg-[#0f1118] border border-white/10 rounded-2xl pl-20 pr-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-green-400 transition-colors"
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-500">
+                    Order notifications will be sent to this WhatsApp.
+                  </p>
+                </div>
+
+                {/* 4-Digit Security PIN */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+                    <KeyRound size={13} className="text-purple-400" />
+                    4-Digit Dashboard PIN <span className="text-[#FA6131]">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    required
+                    placeholder="••••"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="w-full bg-[#0f1118] border border-white/10 rounded-2xl px-4 py-3 text-sm font-extrabold text-white tracking-[0.4em] text-center focus:outline-none focus:border-purple-400 transition-colors"
+                  />
+                  <p className="text-[10px] text-gray-500">
+                    Used to log in to your vendor dashboard with your phone.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 1: Campus Fulfillment & Hours ───────────────────────────── */}
+          {currentStep === 1 && (
+            <div className="space-y-5 animate-in fade-in duration-200">
+              <div className="border-b border-white/5 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Truck size={18} className="text-[#2CD6EB]" />
+                  Fulfillment & Takeaway Pack
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Configure your takeaway container fee and student delivery options for campus hostels.
+                </p>
+              </div>
+
+              {/* Takeaway Pack Fee (Flow Screen 2) */}
+              <div className="bg-[#0f1118] border border-white/10 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <label className="text-xs font-extrabold uppercase tracking-wider text-gray-200 flex items-center gap-1.5">
+                    <Package size={14} className="text-[#FA6131]" />
+                    Takeaway Container Fee (Per Pack)
+                  </label>
+                  <span className="text-[10px] font-bold text-[#FA6131] bg-[#FA6131]/10 px-2 py-0.5 rounded-full border border-[#FA6131]/20">
+                    Auto-Charged in WhatsApp Flow
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {[0, 150, 200, 250, 300].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setContainerCost(preset)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                        Number(containerCost) === preset
+                          ? 'bg-[#FA6131] border-[#FA6131] text-white shadow-lg shadow-[#FA6131]/20'
+                          : 'bg-[#171B26] border-white/10 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {preset === 0 ? 'Free (₦0)' : `₦${preset}`}
+                    </button>
+                  ))}
+                  <div className="relative w-28">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₦</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      value={containerCost}
+                      onChange={(e) => setContainerCost(e.target.value)}
+                      className="w-full bg-[#171B26] border border-white/10 rounded-xl pl-7 pr-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#FA6131]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Modes: Delivery vs Pickup */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Delivery Toggle Card */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  offersDelivery ? 'bg-white/[0.03] border-white/15' : 'bg-[#0f1118] border-white/5 opacity-70'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Truck size={14} className="text-[#2CD6EB]" />
+                      Campus Delivery
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={offersDelivery}
+                      onChange={(e) => setOffersDelivery(e.target.checked)}
+                      className="w-4 h-4 accent-[#2CD6EB] rounded"
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-500 mb-2">
+                    Deliver food around student hostels and campus faculties.
+                  </p>
+                  {offersDelivery && (
+                    <div className="pt-2 border-t border-white/5 space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">
+                        Base Hostel Delivery Fee
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₦</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="50"
+                          value={deliveryFee}
+                          onChange={(e) => setDeliveryFee(e.target.value)}
+                          className="w-full bg-[#0f1118] border border-white/10 rounded-xl pl-7 pr-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-[#2CD6EB]"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Pickup Toggle Card */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  offersPickup ? 'bg-white/[0.03] border-white/15' : 'bg-[#0f1118] border-white/5 opacity-70'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Store size={14} className="text-green-400" />
+                      Pickup / Dine-In
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={offersPickup}
+                      onChange={(e) => setOffersPickup(e.target.checked)}
+                      className="w-4 h-4 accent-green-400 rounded"
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Students can pick up their orders directly at your kitchen spot.
+                  </p>
+                </div>
+              </div>
+
+              {/* Operating Hours */}
+              <div className="bg-[#0f1118] border border-white/10 rounded-2xl p-4 space-y-3">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+                  <Clock size={13} className="text-[#FA6131]" />
+                  Daily Kitchen Operating Schedule
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="block text-[10px] font-bold text-gray-400 mb-1">Kitchen Opens</span>
+                    <input
+                      type="time"
+                      value={openingTime}
+                      onChange={(e) => setOpeningTime(e.target.value)}
+                      className="w-full bg-[#171B26] border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#FA6131]"
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-gray-400 mb-1">Kitchen Closes</span>
+                    <input
+                      type="time"
+                      value={closingTime}
+                      onChange={(e) => setClosingTime(e.target.value)}
+                      className="w-full bg-[#171B26] border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#FA6131]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 2: Daily Payouts & Settlement Bank ─────────────────────── */}
+          {currentStep === 2 && (
+            <div className="space-y-5 animate-in fade-in duration-200">
+              <div className="border-b border-white/5 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <CreditCard size={18} className="text-green-400" />
+                  Bank Account for Daily Payouts
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Verified student payments are disbursed directly to this Nigerian bank account every day.
+                </p>
+              </div>
+
+              {/* Bank Selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-300">
+                  Select Your Bank <span className="text-[#FA6131]">*</span>
+                </label>
                 <select
-                  name="bank_code" id="onboard_bank_code"
-                  value={formData.bank_code} onChange={handleFormChange}
-                  required className="onboard-input"
+                  required
+                  value={bankCode}
+                  onChange={handleBankCodeChange}
+                  className="w-full bg-[#0f1118] border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-green-400 transition-colors"
                 >
-                  <option value="">Select a bank</option>
-                  {NIGERIAN_BANKS.map((bank) => (
-                    <option key={bank.code} value={bank.code}>{bank.name}</option>
+                  <option value="">Choose bank or fintech…</option>
+                  {NIGERIAN_BANKS.map((b) => (
+                    <option key={b.code} value={b.code}>
+                      {b.name}
+                    </option>
                   ))}
                 </select>
-              </Field>
+              </div>
 
-              <div className="onboard-row">
-                <Field label="Account Number" icon={Hash} required>
+              {/* 10-Digit Account Number */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-300">
+                  10-Digit NUBAN Account Number <span className="text-[#FA6131]">*</span>
+                </label>
+                <div className="relative">
                   <input
-                    type="text" inputMode="numeric" pattern="[0-9]*"
-                    name="account_number" id="onboard_account_number"
-                    value={formData.account_number} onChange={handleFormChange}
-                    required autoComplete="off" placeholder="10-digit number"
-                    className="onboard-input"
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    maxLength={10}
+                    placeholder="0123456789"
+                    value={accountNumber}
+                    onChange={handleAccountNumberChange}
+                    className="w-full bg-[#0f1118] border border-white/10 rounded-2xl px-4 py-3 text-base font-mono font-bold tracking-wider text-white focus:outline-none focus:border-green-400 transition-colors"
                   />
-                </Field>
-                <Field label="Account Name" icon={User} required>
-                  <input
-                    type="text" name="account_name" id="onboard_account_name"
-                    value={formData.account_name} onChange={handleFormChange}
-                    required autoComplete="off" placeholder="Account holder name"
-                    className="onboard-input"
-                  />
-                </Field>
+                  {resolvingBank && (
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs text-gray-400 font-bold">
+                      <Loader2 size={14} className="animate-spin text-green-400" />
+                      <span>Verifying…</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Resolved / Manual Account Name */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-300">
+                    Account Holder Name <span className="text-[#FA6131]">*</span>
+                  </label>
+                  {bankResolved && (
+                    <span className="text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 flex items-center gap-1">
+                      <Check size={11} />
+                      Verified
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. SADE AFOLABI"
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                  className={`w-full bg-[#0f1118] border rounded-2xl px-4 py-3 text-sm font-bold text-white focus:outline-none transition-colors ${
+                    bankResolved
+                      ? 'border-green-500/40 bg-green-500/[0.02]'
+                      : 'border-white/10 focus:border-green-400'
+                  }`}
+                />
+                {bankResolveError && (
+                  <p className="text-[11px] text-amber-400">{bankResolveError}</p>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Step 2: Menu */}
-        {currentStep === 2 && (
-          <div className="onboard-card">
-            <div className="onboard-card-header-row">
-              <h3 className="onboard-card-title">
-                <ChefHat size={18} /> Menu Items
-              </h3>
-              <span className="onboard-menu-count">
-                {menuItems.length} item{menuItems.length !== 1 ? 's' : ''}
-              </span>
-            </div>
+          {/* ── STEP 3: Starter Menu ────────────────────────────────────────── */}
+          {currentStep === 3 && (
+            <div className="space-y-5 animate-in fade-in duration-200">
+              <div className="border-b border-white/5 pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <ChefHat size={18} className="text-amber-400" />
+                      Starter Food Menu
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Add a few popular items to launch your digital catalog. You can edit full menus anytime.
+                    </p>
+                  </div>
+                  <span className="text-xs font-extrabold text-[#FA6131] bg-[#FA6131]/10 px-2.5 py-1 rounded-full border border-[#FA6131]/20">
+                    {menuItems.length} {menuItems.length === 1 ? 'Item' : 'Items'}
+                  </span>
+                </div>
+              </div>
 
-            <div className="onboard-menu-list">
-              {menuItems.map((item, index) => (
-                <div key={`menu-${index}`} className="onboard-menu-item">
-                  <div className="onboard-menu-item-header">
-                    <span className="onboard-menu-item-num">#{index + 1}</span>
+              {/* 1-Tap Campus Presets */}
+              <div className="bg-[#0f1118] border border-white/10 rounded-2xl p-3.5 space-y-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                  <Sparkles size={12} className="text-amber-400" />
+                  1-Tap Popular Campus Favorites
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {STARTER_MENU_PRESETS.map((preset) => {
+                    const alreadyAdded = menuItems.some(
+                      (i) => i.name.toLowerCase() === preset.name.toLowerCase()
+                    );
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => handleAddPresetItem(preset)}
+                        disabled={alreadyAdded}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 ${
+                          alreadyAdded
+                            ? 'bg-white/5 border-white/5 text-gray-500 cursor-default'
+                            : 'bg-[#171B26] border-white/10 text-gray-300 hover:text-white hover:border-[#FA6131]/40'
+                        }`}
+                      >
+                        <span>{preset.name}</span>
+                        <span className="text-[10px] text-gray-500 font-mono">₦{preset.price}</span>
+                        {alreadyAdded ? <Check size={12} className="text-green-400" /> : <Plus size={12} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Editable Items List */}
+              <div className="space-y-2.5">
+                {menuItems.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#0f1118] border border-white/10 rounded-2xl p-3.5 flex items-center gap-2.5"
+                  >
+                    <span className="text-xs font-bold text-gray-500 w-5 text-center">
+                      #{idx + 1}
+                    </span>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        placeholder="Item name (e.g. Jollof Rice)"
+                        value={item.name}
+                        onChange={(e) => handleCustomItemChange(idx, 'name', e.target.value)}
+                        className="w-full bg-transparent text-xs font-bold text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="relative w-28">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">₦</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Price"
+                        value={item.price}
+                        onChange={(e) => handleCustomItemChange(idx, 'price', e.target.value)}
+                        className="w-full bg-[#171B26] border border-white/10 rounded-xl pl-6 pr-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-[#FA6131]"
+                      />
+                    </div>
                     {menuItems.length > 1 && (
                       <button
-                        type="button" onClick={() => removeMenuItem(index)}
-                        className="onboard-menu-remove"
-                        aria-label="Remove item"
+                        type="button"
+                        onClick={() => handleRemoveMenuItem(idx)}
+                        className="p-1.5 text-gray-500 hover:text-red-400 transition-colors"
+                        title="Remove item"
                       >
                         <Trash2 size={14} />
                       </button>
                     )}
                   </div>
-                  <input
-                    type="text" name="name" value={item.name}
-                    onChange={(e) => handleMenuChange(index, e)}
-                    placeholder="Item name (e.g. Jollof Rice)"
-                    required className="onboard-input"
-                  />
-                  <div className="onboard-row">
-                    <input
-                      type="text" name="category" value={item.category}
-                      onChange={(e) => handleMenuChange(index, e)}
-                      placeholder="Category (e.g. Rice)"
-                      className="onboard-input"
-                    />
-                    <input
-                      type="number" name="price" value={item.price}
-                      onChange={(e) => handleMenuChange(index, e)}
-                      placeholder="₦ Price"
-                      required className="onboard-input onboard-input-price"
-                    />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {/* Add Custom Item Button */}
+              <button
+                type="button"
+                onClick={handleAddNewMenuItem}
+                className="w-full py-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-dashed border-white/15 text-xs font-bold text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Plus size={14} />
+                <span>Add Another Dish</span>
+              </button>
             </div>
+          )}
 
-            <button
-              type="button" onClick={addMenuItem}
-              className="onboard-add-menu-btn"
-            >
-              <Plus size={15} /> Add Item
-            </button>
+          {/* ── Form Navigation Buttons ───────────────────────────────────────── */}
+          <div className="flex items-center justify-between pt-4 border-t border-white/5">
+            {currentStep > 0 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(currentStep - 1)}
+                className="px-5 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-300 transition-colors flex items-center gap-1.5"
+              >
+                <ChevronLeft size={16} />
+                <span>Back</span>
+              </button>
+            ) : <div />}
+
+            {currentStep < STEPS.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(currentStep + 1)}
+                disabled={!canAdvance()}
+                className="px-6 py-3 rounded-2xl bg-[#FA6131] hover:bg-[#ff7244] text-white text-xs font-extrabold shadow-xl shadow-[#FA6131]/25 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <span>Continue</span>
+                <ChevronRight size={16} />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={loading || !canAdvance()}
+                className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#FA6131] to-[#e04e1f] text-white text-xs font-extrabold shadow-xl shadow-[#FA6131]/30 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                <span>{loading ? 'Launching Bukka…' : 'Launch My WhatsApp Kitchen'}</span>
+              </button>
+            )}
           </div>
-        )}
-
-        {/* Navigation */}
-        <div className="onboard-nav">
-          {currentStep > 0 && (
-            <button
-              type="button"
-              onClick={() => setCurrentStep(currentStep - 1)}
-              className="onboard-btn-secondary"
-            >
-              Back
-            </button>
-          )}
-          <div className="onboard-nav-spacer" />
-          {currentStep < STEPS.length - 1 ? (
-            <button
-              type="button"
-              onClick={() => setCurrentStep(currentStep + 1)}
-              disabled={!canAdvance()}
-              className="onboard-btn-primary"
-            >
-              Continue
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={loading}
-              className="onboard-btn-primary"
-            >
-              {loading ? 'Creating Storefront…' : 'Save & Generate Storefront'}
-            </button>
-          )}
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };
-
-
-/* ═══════════════════════════════════════════════════════════════════════
-   STYLES
-   ═══════════════════════════════════════════════════════════════════════ */
-const onboardStyles = `
-  .onboard-root {
-    max-width: 640px;
-    margin: 0 auto;
-    padding-bottom: 48px;
-  }
-
-  /* ── Header ── */
-  .onboard-page-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .onboard-back-btn {
-    width: 36px; height: 36px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: rgba(255,255,255,0.04);
-    color: #9ca3af;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    margin-top: 2px;
-    transition: all .15s;
-  }
-  .onboard-back-btn:hover {
-    color: #f3f4f6;
-    background: rgba(255,255,255,0.08);
-  }
-  .onboard-page-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #f3f4f6;
-    margin: 0;
-    letter-spacing: -0.02em;
-  }
-  .onboard-page-desc {
-    font-size: 13px;
-    color: #6b7280;
-    margin: 3px 0 0;
-  }
-
-  /* ── Steps ── */
-  .onboard-steps {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 24px;
-    padding: 16px 20px;
-    background: #171B26;
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 12px;
-  }
-  .onboard-step-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-  }
-  .onboard-step-circle {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: #4b5563;
-    font-size: 12px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    transition: all .2s;
-  }
-  .onboard-step-active {
-    background: rgba(250,97,49,0.15);
-    border-color: rgba(250,97,49,0.3);
-    color: #FA6131;
-  }
-  .onboard-step-done {
-    background: rgba(52,211,153,0.15);
-    border-color: rgba(52,211,153,0.3);
-    color: #34d399;
-  }
-  .onboard-step-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #4b5563;
-    white-space: nowrap;
-  }
-  .onboard-step-label-active {
-    color: #d1d5db;
-  }
-  .onboard-step-line {
-    flex: 1;
-    height: 1px;
-    background: rgba(255,255,255,0.06);
-    margin: 0 4px;
-    min-width: 16px;
-  }
-  .onboard-step-line-done {
-    background: rgba(52,211,153,0.3);
-  }
-
-  /* ── Card ── */
-  .onboard-card {
-    background: #171B26;
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 14px;
-    padding: 24px;
-  }
-  .onboard-card-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #f3f4f6;
-    margin: 0 0 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .onboard-card-title svg {
-    color: #FA6131;
-  }
-  .onboard-card-desc {
-    font-size: 12px;
-    color: #6b7280;
-    margin: 0 0 16px;
-  }
-  .onboard-card-header-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-
-  /* ── Fields ── */
-  .onboard-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 16px;
-  }
-  .onboard-label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #9ca3af;
-    margin-bottom: 6px;
-  }
-  .onboard-label-icon {
-    color: #6b7280;
-  }
-  .onboard-required {
-    color: #FA6131;
-    margin-left: 1px;
-  }
-  .onboard-hint {
-    font-size: 11px;
-    color: #4b5563;
-    margin: 4px 0 0;
-  }
-  .onboard-input {
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.03);
-    color: #f3f4f6;
-    font-size: 13px;
-    outline: none;
-    transition: border-color .15s;
-    box-sizing: border-box;
-  }
-  .onboard-input::placeholder {
-    color: #4b5563;
-  }
-  .onboard-input:focus {
-    border-color: rgba(44,214,235,0.4);
-  }
-  .onboard-input option {
-    background: #171B26;
-    color: #f3f4f6;
-  }
-  .onboard-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  /* ── Menu items ── */
-  .onboard-menu-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 420px;
-    overflow-y: auto;
-    padding-right: 4px;
-  }
-  .onboard-menu-item {
-    padding: 14px;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .onboard-menu-item-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .onboard-menu-item-num {
-    font-size: 11px;
-    font-weight: 700;
-    color: #6b7280;
-  }
-  .onboard-menu-remove {
-    background: none;
-    border: none;
-    color: #6b7280;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color .15s;
-  }
-  .onboard-menu-remove:hover {
-    color: #ef4444;
-  }
-  .onboard-menu-count {
-    font-size: 11px;
-    font-weight: 700;
-    color: #2CD6EB;
-    background: rgba(44,214,235,0.1);
-    padding: 3px 10px;
-    border-radius: 20px;
-  }
-  .onboard-input-price {
-    font-family: monospace;
-  }
-  .onboard-add-menu-btn {
-    width: 100%;
-    margin-top: 12px;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px dashed rgba(255,255,255,0.1);
-    background: transparent;
-    color: #6b7280;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all .15s;
-  }
-  .onboard-add-menu-btn:hover {
-    border-color: rgba(44,214,235,0.3);
-    color: #2CD6EB;
-  }
-
-  /* ── Navigation ── */
-  .onboard-nav {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 20px;
-  }
-  .onboard-nav-spacer {
-    flex: 1;
-  }
-  .onboard-btn-primary {
-    padding: 10px 24px;
-    border-radius: 8px;
-    background: #FA6131;
-    border: none;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s;
-  }
-  .onboard-btn-primary:hover {
-    background: #e04e1f;
-  }
-  .onboard-btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .onboard-btn-secondary {
-    padding: 10px 20px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
-    color: #d1d5db;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .onboard-btn-secondary:hover {
-    background: rgba(255,255,255,0.08);
-    color: #f3f4f6;
-  }
-
-  /* ── Error ── */
-  .onboard-error {
-    padding: 10px 16px;
-    border-radius: 10px;
-    background: rgba(239,68,68,0.06);
-    border: 1px solid rgba(239,68,68,0.15);
-    color: #f87171;
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 16px;
-  }
-
-  /* ── Success ── */
-  .onboard-success-card {
-    background: #171B26;
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 14px;
-    padding: 32px 24px;
-  }
-  .onboard-success-header {
-    text-align: center;
-    margin-bottom: 28px;
-  }
-  .onboard-success-icon {
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    background: rgba(52,211,153,0.1);
-    border: 1px solid rgba(52,211,153,0.2);
-    color: #34d399;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 16px;
-  }
-  .onboard-success-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: #f3f4f6;
-    margin: 0 0 6px;
-  }
-  .onboard-success-desc {
-    font-size: 13px;
-    color: #6b7280;
-    margin: 0;
-  }
-  .onboard-success-panels {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 24px;
-  }
-  .onboard-panel {
-    padding: 20px;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 10px;
-  }
-  .onboard-panel-pairing {
-    align-items: stretch;
-    text-align: left;
-  }
-  .onboard-panel-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .onboard-qr-img {
-    width: 120px; height: 120px;
-    background: #fff;
-    padding: 6px;
-    border-radius: 8px;
-  }
-  .onboard-store-link {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    font-family: monospace;
-    color: #2CD6EB;
-    text-decoration: none;
-  }
-  .onboard-store-link:hover {
-    text-decoration: underline;
-  }
-  .onboard-panel-note {
-    font-size: 11px;
-    color: #4b5563;
-    margin: 0;
-  }
-  .onboard-panel-hint {
-    font-size: 10px;
-    color: #4b5563;
-    margin: 0;
-  }
-  .onboard-pairing-code {
-    font-size: 28px;
-    font-family: monospace;
-    font-weight: 900;
-    color: #93c5fd;
-    letter-spacing: 0.15em;
-    text-align: center;
-    padding: 12px;
-    background: rgba(59,130,246,0.06);
-    border-radius: 8px;
-    border: 1px solid rgba(59,130,246,0.12);
-  }
-  .onboard-pairing-instruction {
-    font-size: 12px;
-    color: #9ca3af;
-    margin: 0;
-  }
-  .onboard-pairing-command {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px;
-  }
-  .onboard-pairing-command code {
-    font-size: 13px;
-    font-weight: 700;
-    color: #f3f4f6;
-  }
-  .onboard-copy-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border-radius: 5px;
-    background: rgba(59,130,246,0.08);
-    border: 1px solid rgba(59,130,246,0.15);
-    color: #60a5fa;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .onboard-success-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-  }
-
-  /* ── Responsive ── */
-  @media (max-width: 640px) {
-    .onboard-root {
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-    .onboard-row {
-      grid-template-columns: 1fr;
-    }
-    .onboard-success-panels {
-      grid-template-columns: 1fr;
-    }
-    .onboard-step-label {
-      display: none;
-    }
-  }
-`;
 
 export default OnboardVendorForm;

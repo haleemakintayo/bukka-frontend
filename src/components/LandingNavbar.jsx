@@ -81,12 +81,12 @@ const LandingNavbar = () => {
               {isDarkMode ? <Sun size={19} className="text-yellow-400" /> : <Moon size={19} />}
             </button>
 
-            <a 
-              href="https://wa.me/2349060251750" 
+            <Link 
+              to="/onboard" 
               className="inline-flex items-center justify-center font-display font-extrabold text-sm uppercase tracking-wide bg-[#FA6131] hover:bg-[#ff7244] text-white px-5 py-2.5 rounded-xl border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_0px_#000] dark:hover:shadow-[1px_1px_0px_0px_#fff] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
             >
-              Join the Beta ⚡
-            </a>
+              Start Free Store ⚡
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -142,13 +142,13 @@ const LandingNavbar = () => {
             >
               ⭐ Testimonials
             </a>
-            <a 
+            <Link 
               onClick={toggleMobileMenu} 
-              href="https://wa.me/2349060251750" 
+              to="/onboard" 
               className="mt-2 font-display font-extrabold uppercase tracking-wide bg-[#FA6131] text-white text-center rounded-xl border-3 border-black p-3 shadow-[4px_4px_0px_0px_#000]"
             >
-              Join the Beta Now ⚡
-            </a>
+              Start Free Store ⚡
+            </Link>
           </div>
         </div>
       )}

@@ -4,10 +4,15 @@ import {
   Store, 
   MessageSquare, 
   ListPlus, 
-  Smartphone,
-  CreditCard,
-  ArrowRight,
-  Copy
+  Smartphone, 
+  CreditCard, 
+  ArrowRight, 
+  Copy,
+  MessageCircle,
+  Package,
+  Truck,
+  ShieldCheck,
+  Flame
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -16,15 +21,30 @@ export default function VendorOnboardingGuide() {
   const demoPairingCode = "8f3a9b21";
 
   const steps = [
-    { step: 1, title: "Create Your Profile", desc: "Tell us about your Bukka and where to send your money.", icon: <Store className="w-6 h-6 text-[#0F6B43]" /> },
-    { step: 2, title: "Build Your Menu", desc: "Add your food items, categories, and prices.", icon: <ListPlus className="w-6 h-6 text-[#0F6B43]" /> },
-    { step: 3, title: "Connect Telegram", desc: "Link our bot to your phone to receive instant orders.", icon: <Smartphone className="w-6 h-6 text-[#0F6B43]" /> }
+    { 
+      step: 1, 
+      title: "Store Profile & WhatsApp", 
+      desc: "Provide your Bukka name, WhatsApp number, and choose your 4-digit dashboard PIN.", 
+      icon: <Store className="w-6 h-6 text-[#FA6131]" /> 
+    },
+    { 
+      step: 2, 
+      title: "Menu & Campus Delivery", 
+      desc: "Set starter food items, hostel delivery fees, and your takeaway container pack fee.", 
+      icon: <ListPlus className="w-6 h-6 text-[#2CD6EB]" /> 
+    },
+    { 
+      step: 3, 
+      title: "1-Tap WhatsApp Link", 
+      desc: "Link our bot to your WhatsApp phone in 1 click to receive instant order alerts.", 
+      icon: <MessageCircle className="w-6 h-6 text-green-500" /> 
+    }
   ];
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(demoPairingCode);
+    navigator.clipboard.writeText(`/link ${demoPairingCode}`);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000); // Reset icon after 2 seconds
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -32,27 +52,41 @@ export default function VendorOnboardingGuide() {
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Header Section */}
-        <div className="bg-[#0F6B43] rounded-3xl p-8 md:p-12 text-white shadow-sm">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight lowercase mb-4">
-            getting started with bukka ai
+        <div className="bg-gradient-to-r from-[#FA6131] to-[#e04e1f] rounded-3xl p-8 md:p-12 text-white shadow-xl shadow-[#FA6131]/15">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="px-3 py-1 rounded-full bg-white/20 text-white text-xs font-extrabold uppercase tracking-widest backdrop-blur-sm">
+              WhatsApp-First Ordering
+            </span>
+          </div>
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">
+            Getting Started with Bukka AI
           </h1>
-          <p className="text-emerald-50 max-w-2xl text-lg">
-            Welcome! Setting up your digital Bukka is incredibly simple. You don't need any technical skills, 
-            and you don't even need to download a new app. This quick guide explains how to get your store online in 5 minutes.
+          <p className="text-white/90 max-w-2xl text-base md:text-lg leading-relaxed">
+            Welcome! Setting up your digital Bukka takes just 2 minutes. Students order directly 
+            through WhatsApp Flows or your digital menu, and you receive instant alerts on WhatsApp with automated daily bank payouts.
           </p>
+          <div className="pt-6">
+            <Link
+              to="/onboard"
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-white text-[#FA6131] font-extrabold text-sm shadow-xl hover:bg-white/95 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <span>Launch Your Kitchen Now</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
 
         {/* Stepper Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {steps.map((s, idx) => (
             <div key={idx} className="bg-white dark:bg-bukka-card-surface p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-start gap-4 hover:shadow-md transition-all">
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-full flex-shrink-0">
+              <div className="bg-gray-100 dark:bg-white/5 p-3 rounded-2xl flex-shrink-0">
                 {s.icon}
               </div>
               <div>
-                <p className="text-sm font-bold text-[#FF6600] uppercase tracking-wider mb-1">Step {s.step}</p>
-                <h3 className="font-bold text-lg mb-1 dark:text-bukka-soft-white">{s.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{s.desc}</p>
+                <p className="text-xs font-bold text-[#FA6131] uppercase tracking-wider mb-1">Step {s.step}</p>
+                <h3 className="font-bold text-base mb-1 dark:text-bukka-soft-white">{s.title}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{s.desc}</p>
               </div>
             </div>
           ))}
@@ -60,159 +94,121 @@ export default function VendorOnboardingGuide() {
 
         {/* Step 1 & 2 Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white dark:bg-bukka-card-surface rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-8">
-            <div className="w-12 h-12 bg-orange-50 dark:bg-[#FF6600]/10 rounded-full flex items-center justify-center mb-6">
-              <CreditCard className="w-6 h-6 text-[#FF6600]" />
+          <div className="bg-white dark:bg-bukka-card-surface rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 space-y-4">
+            <div className="w-12 h-12 bg-[#FA6131]/10 rounded-2xl flex items-center justify-center">
+              <CreditCard className="w-6 h-6 text-[#FA6131]" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight lowercase text-gray-900 dark:text-bukka-soft-white mb-3">
-              1. profile & payments
+            <h2 className="text-xl font-bold tracking-tight text-gray-900 dark:text-bukka-soft-white">
+              1. Profile & Daily Bank Payouts
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-              First, you'll need to enter your business name and create a login using your email. 
-              Most importantly, you'll provide your <strong>Bank Account Details</strong>. 
+            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+              Enter your business name, WhatsApp operating number, and your <strong>Nigerian Bank Account</strong> (GTBank, Access, Kuda, Opay, Palmpay, Moniepoint, etc.).
               <br/><br/>
-              When students pay for their food through our platform, the money is routed securely 
-              and directly to the account you provide. No middleman delays!
+              When students pay on WhatsApp, funds are verified in real time and disbursed directly 
+              to your account via daily bank settlement.
             </p>
           </div>
 
-          <div className="bg-white dark:bg-bukka-card-surface rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-8">
-            <div className="w-12 h-12 bg-emerald-50 dark:bg-[#0F6B43]/10 rounded-full flex items-center justify-center mb-6">
-              <ListPlus className="w-6 h-6 text-[#0F6B43]" />
+          <div className="bg-white dark:bg-bukka-card-surface rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 space-y-4">
+            <div className="w-12 h-12 bg-[#2CD6EB]/10 rounded-2xl flex items-center justify-center">
+              <Package className="w-6 h-6 text-[#2CD6EB]" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight lowercase text-gray-900 dark:text-bukka-soft-white mb-3">
-              2. adding your menu
+            <h2 className="text-xl font-bold tracking-tight text-gray-900 dark:text-bukka-soft-white">
+              2. Takeaway Packs & Campus Delivery
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-              You will add the food items you sell (e.g., "Jollof Rice", "Fried Turkey"), 
-              assign them a category, and set your exact prices. 
+            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+              Every WhatsApp food order in campus requires takeaway packaging. You can set your 
+              <strong> Takeaway Pack Fee</strong> (e.g. ₦150, ₦200), which is automatically charged on WhatsApp Flow Screen 2.
               <br/><br/>
-              Don't worry if a price changes or you run out of an item later—you can easily update 
-              your menu right from your phone while you're cooking.
+              You can also specify your hostel delivery fee or offer direct kitchen pickup for student walk-ins.
             </p>
           </div>
         </div>
 
-        {/* Step 3 - The Pairing Process (Most Important) */}
+        {/* Step 3 - The WhatsApp Linking Process */}
         <div className="bg-white dark:bg-bukka-card-surface rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-          <div className="p-8 md:p-12 border-b border-gray-100 dark:border-gray-800 bg-[#0A0A0A] dark:bg-black/40 text-white">
+          <div className="p-8 md:p-12 border-b border-gray-100 dark:border-gray-800 bg-[#0F1118] text-white">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-[#FF6600]/20 rounded-2xl flex items-center justify-center">
-                <Smartphone className="w-8 h-8 text-[#FF6600]" />
+              <div className="w-14 h-14 bg-green-500/20 border border-green-500/30 rounded-2xl flex items-center justify-center">
+                <MessageCircle className="w-8 h-8 text-green-400" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold tracking-tight lowercase">3. connect to telegram</h2>
-                <p className="text-gray-400 mt-1">Your new kitchen display system.</p>
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight">3. 1-Tap WhatsApp Linking</h2>
+                <p className="text-gray-400 text-sm mt-0.5">Your automated kitchen order alert system.</p>
               </div>
             </div>
             
-            <p className="text-lg text-gray-300 leading-relaxed mb-8 max-w-3xl">
-              Bukka AI doesn't force you to download or learn a heavy new app. We use the Telegram app 
-              you already know to send you order alerts and let you control your store. 
+            <p className="text-sm md:text-base text-gray-300 leading-relaxed mb-8 max-w-3xl">
+              Bukka AI delivers paid order alerts right where you spend your day: <strong>WhatsApp</strong>. 
+              You don&apos;t have to keep an app open or refresh a browser to know when food is ordered.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-                <h3 className="font-bold text-xl mb-4 text-[#FF6600]">How to link your phone:</h3>
-                <ul className="space-y-4">
-                  <li className="flex flex-col gap-2">
-                    <div className="flex items-start gap-3">
-                      <span className="bg-white/10 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm mt-0.5">1</span>
-                      <p className="text-gray-300">When you finish the setup form, our system will show you a unique 8-letter <strong>Pairing Code</strong>.</p>
-                    </div>
-                    
-                    {/* Interactive Copy Block */}
-                    <div className="ml-9 mt-1 mb-2 flex items-center justify-between bg-black/40 border border-white/10 rounded-xl p-3 max-w-xs">
-                      <span className="font-mono text-xl tracking-widest text-white">{demoPairingCode}</span>
-                      <button 
-                        onClick={handleCopy}
-                        className="p-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-lg transition-all flex items-center gap-2 text-sm text-gray-300"
-                        title="Copy to clipboard"
-                      >
-                        {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        <span className="font-medium">{copied ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+                <h3 className="font-bold text-base text-[#FA6131]">How 1-Tap Linking Works:</h3>
+                <ul className="space-y-4 text-xs md:text-sm text-gray-300">
+                  <li className="flex items-start gap-3">
+                    <span className="bg-white/10 w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">1</span>
+                    <p>After completing the onboarding form, you will get a unique pairing code.</p>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="bg-white/10 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm">2</span>
-                    <p className="text-gray-300">Open the Telegram app and search for our bot: <strong className="text-white">@BukkaAIBot</strong></p>
+                    <span className="bg-white/10 w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">2</span>
+                    <p>Tap the green <strong>&quot;Connect WhatsApp in 1 Tap&quot;</strong> button.</p>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="bg-white/10 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm">3</span>
-                    <p className="text-gray-300">Send a message to the bot typing <code className="bg-black px-2 py-1 rounded text-emerald-400 border border-white/10">/link your-code</code></p>
+                    <span className="bg-white/10 w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">3</span>
+                    <p>WhatsApp opens with <code className="bg-black/60 px-2 py-0.5 rounded text-green-400 font-mono">/link {demoPairingCode}</code> pre-filled. Press send and you&apos;re connected!</p>
                   </li>
                 </ul>
-                <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                  <p className="text-sm text-emerald-100">That's it! Your store is instantly live and ready to receive orders.</p>
+
+                <div className="p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+                  <p className="text-xs text-green-200">
+                    Your kitchen will immediately receive order pings, customer phone numbers, and delivery hostel details!
+                  </p>
                 </div>
               </div>
 
-              {/* Mock Chat UI */}
-              <div className="bg-[#1C1C1E] dark:bg-[#0A0A0A] border border-white/10 rounded-2xl p-4 overflow-hidden flex flex-col h-full">
-                <div className="text-center border-b border-white/10 pb-3 mb-4">
-                  <p className="font-bold text-sm">BukkaAIBot</p>
-                  <p className="text-xs text-gray-500">bot</p>
+              {/* Mock WhatsApp Chat UI */}
+              <div className="bg-[#1C2230] border border-white/10 rounded-2xl p-5 overflow-hidden flex flex-col space-y-4">
+                <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-xs">
+                    B
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs text-white">Bukka AI Order Alerts</p>
+                    <p className="text-[10px] text-green-400">● Online · WhatsApp Business</p>
+                  </div>
                 </div>
                 
-                <div className="flex-1 space-y-4">
-                  {/* Message bubble from user */}
+                <div className="space-y-3">
                   <div className="flex justify-end">
-                    <div className="bg-[#0F6B43] text-white px-4 py-2 rounded-2xl rounded-br-sm text-sm inline-block shadow-sm">
+                    <div className="bg-[#005c4b] text-white px-3.5 py-2 rounded-2xl rounded-tr-sm text-xs shadow-sm font-mono">
                       /link {demoPairingCode}
                     </div>
                   </div>
                   
-                  {/* Message bubble from bot */}
                   <div className="flex justify-start">
-                    <div className="bg-[#2C2C2E] text-white px-4 py-3 rounded-2xl rounded-bl-sm text-sm inline-block shadow-sm border border-white/5 max-w-[90%]">
-                      ✅ Success! Your Bukka is now linked.
+                    <div className="bg-[#202c33] text-white px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-xs shadow-sm border border-white/5 max-w-[90%] leading-relaxed">
+                      ✅ <strong>Store linked successfully!</strong>
                       <br/><br/>
-                      You will receive new order notifications right here. Type <span className="text-[#FF6600]">/help</span> anytime to see what you can do.
+                      New paid orders from campus students will appear here instantly with customer contact, delivery room, and payment details.
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Daily Commands Section */}
-        <div className="bg-white dark:bg-bukka-card-surface rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 md:p-12">
-          <div className="flex items-center gap-3 mb-6">
-            <MessageSquare className="w-8 h-8 text-[#0F6B43]" />
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight lowercase text-gray-900 dark:text-bukka-soft-white">managing your store</h2>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl text-lg">
-            Once connected, you manage everything by typing simple commands to the Telegram bot. 
-            No confusing dashboards needed!
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 hover:border-[#FF6600]/30 transition-colors">
-              <p className="font-mono text-[#FF6600] font-bold mb-2">/confirm 102</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Accepts incoming order #102 and notifies the student.</p>
-            </div>
-            <div className="border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 hover:border-[#FF6600]/30 transition-colors">
-              <p className="font-mono text-[#FF6600] font-bold mb-2">/out Chicken</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Marks chicken as "Sold Out" so students can't order it.</p>
-            </div>
-            <div className="border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 hover:border-[#FF6600]/30 transition-colors">
-              <p className="font-mono text-[#FF6600] font-bold mb-2">/restock Chicken</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Makes the chicken available on your menu again.</p>
-            </div>
-            <div className="border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 hover:border-[#FF6600]/30 transition-colors">
-              <p className="font-mono text-[#FF6600] font-bold mb-2">/menu</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Shows a list of everything currently on your menu.</p>
             </div>
           </div>
         </div>
 
         {/* CTA Section */}
-        <div className="flex justify-center pt-8 pb-12">
-          <Link to="/" className="inline-flex items-center gap-2 bg-[#0F6B43] hover:bg-[#0c5736] text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-            Get Started Now <ArrowRight size={20} />
+        <div className="flex justify-center pt-4 pb-8">
+          <Link 
+            to="/onboard" 
+            className="inline-flex items-center gap-2.5 bg-[#FA6131] hover:bg-[#ff7244] text-white px-8 py-4 rounded-2xl font-extrabold text-base shadow-xl shadow-[#FA6131]/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            <span>Set Up Your Kitchen in 2 Minutes</span>
+            <ArrowRight size={18} />
           </Link>
         </div>
 

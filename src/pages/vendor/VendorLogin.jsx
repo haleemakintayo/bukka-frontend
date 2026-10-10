@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { Phone, KeyRound, Loader2, MessageCircle } from 'lucide-react';
 import { useVendorAuth } from '../../context/VendorAuthContext';
 import { getApiErrorMessage } from '../../services/api';
@@ -122,6 +122,16 @@ const VendorLogin = () => {
           >
             {loading ? <Loader2 size={24} className="animate-spin" /> : 'Secure Login'}
           </button>
+
+          <div className="text-center pt-3">
+            <Link
+              to="/onboard"
+              className="text-xs font-bold text-gray-400 hover:text-[#FA6131] transition-colors inline-flex items-center gap-1.5"
+            >
+              <span>New vendor? Set up your store in 2 minutes</span>
+              <span>→</span>
+            </Link>
+          </div>
         </form>
       </div>
 

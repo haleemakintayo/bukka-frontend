@@ -88,6 +88,13 @@ export const adminService = {
       bank_code: vendorData.bank_code?.trim() || undefined,
       account_number: vendorData.account_number?.trim() || undefined,
       account_name: vendorData.account_name?.trim() || undefined,
+      pin: vendorData.pin?.trim() || undefined,
+      location: vendorData.location?.trim() || undefined,
+      hours: vendorData.hours?.trim() || undefined,
+      container_cost: vendorData.container_cost !== undefined ? Number(vendorData.container_cost) : undefined,
+      offers_delivery: vendorData.offers_delivery !== undefined ? Boolean(vendorData.offers_delivery) : undefined,
+      offers_pickup: vendorData.offers_pickup !== undefined ? Boolean(vendorData.offers_pickup) : undefined,
+      delivery_fee: vendorData.delivery_fee !== undefined ? Number(vendorData.delivery_fee) : undefined,
       menu_items: normaliseMenuItems(vendorData.menu_items),
     };
     // Remove undefined keys so backend doesn't receive nulls for optional fields

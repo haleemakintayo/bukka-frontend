@@ -83,6 +83,10 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/success" element={<OrderSuccess />} />
 
+        {/* Public Vendor Onboarding & Registration */}
+        <Route path="/onboard" element={<OnboardVendorForm />} />
+        <Route path="/vendor/register" element={<Navigate to="/onboard" replace />} />
+
         {/* Vendor Flow (Mobile PWA) */}
         <Route path="/vendor" element={<VendorApp />}>
           <Route path="login" element={<VendorLogin />} />
