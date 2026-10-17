@@ -9,7 +9,6 @@ import {
   Clock,
   Star,
   Zap,
-  Users,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -45,7 +44,7 @@ const steps = [
     stepNumber: '03',
     title: 'Green Alert Payments',
     description:
-      'Funds are routed directly to your bank account via Bachs. You only hear the ring and cook when the verified alert drops.',
+      'Funds are routed directly to your bank account. You only hear the ring and cook when the verified alert drops.',
     icon: Wallet,
     bgColor: 'bg-[#BBF7D0] dark:bg-[#1C2230]', // Neo Pastel Green
     iconBg: 'bg-[#25D366]',
@@ -64,7 +63,7 @@ const highlights = [
   },
   {
     title: 'Faster queues, happier students',
-    description: 'Slash customer wait time by 60%. Eliminate lunch-hour bottlenecks at your front counter.',
+    description: 'Dramatically reduce customer wait time and eliminate lunch-hour bottlenecks at your front counter.',
     icon: Clock,
     tag: 'SPEED',
     tagColor: 'bg-[#FFE600] text-black',
@@ -108,7 +107,7 @@ const testimonials = [
     role: 'Campus Grill House',
     campus: 'FUTA',
     quote:
-      'We stopped cooking on promises. Every order printed on our queue is a verified Bachs green alert. Revenue is up 35%.',
+      'We stopped cooking on promises. Every order printed on our queue is a verified green alert. Orders move so much faster.',
   },
 ];
 
@@ -119,7 +118,7 @@ const faqs = [
   },
   {
     question: 'How do I get paid for orders?',
-    answer: 'All payments are processed securely via Bachs and deposited straight into your Nigerian bank account with instant settlement.',
+    answer: 'All payments are processed securely and deposited straight into your Nigerian bank account with instant settlement.',
   },
   {
     question: 'Can I update my menu and prices anytime?',
@@ -162,7 +161,7 @@ const ScreenshotCarousel = ({ screenshots }) => {
         💬 Live in WhatsApp
       </div>
       <div className="absolute -bottom-2 left-1 sm:-left-3 z-20 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-[#FFE600] text-black font-display font-black text-[10px] sm:text-xs uppercase tracking-wider rounded-md sm:rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000] sm:shadow-[3px_3px_0px_0px_#000] -rotate-2 sm:-rotate-3">
-        ⚡ Bachs Direct
+        ⚡ Direct Bank Alerts
       </div>
 
       <div className="relative w-full flex justify-center items-center py-2">
@@ -236,59 +235,60 @@ const LandingPage = () => {
               {/* Sticker Pill Badge */}
               <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-lg border-2 border-black dark:border-white bg-[#FFE600] text-black font-display font-black text-[11px] sm:text-xs uppercase tracking-wider shadow-[2.5px_2.5px_0px_0px_#000] sm:shadow-[3px_3px_0px_0px_#000] dark:shadow-[2.5px_2.5px_0px_0px_#fff] mb-5 sm:mb-6">
                 <Sparkles size={13} className="fill-black" />
-                <span>Autonomous WhatsApp Sales For Campus Bukkas</span>
+                <span>WHATSAPP SALES ASSISTANT FOR FOOD BUSINESSES</span>
               </div>
 
               {/* High-Impact Neo-Brutalist Headline */}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black tracking-tight text-gray-950 dark:text-white leading-[1.15]">
-                Stop missing orders. Let{' '}
-                <span className="relative inline-block px-2 sm:px-2.5 py-0.5 mx-0.5 sm:mx-1 bg-[#2CD6EB] text-black border-2 sm:border-3 border-black rounded-lg sm:rounded-xl shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] -rotate-1">
-                  Auntie Chioma
-                </span>{' '}
-                handle your WhatsApp chats.
+              <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-display font-black tracking-tight text-gray-950 dark:text-white leading-[1.2]">
+                More Food Orders.{' '}
+                <span className="relative inline-block sm:whitespace-nowrap px-2.5 sm:px-3.5 py-0.5 sm:py-1 mx-0.5 sm:mx-1 bg-[#2CD6EB] text-black border-2 sm:border-3 border-black rounded-lg sm:rounded-xl shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] -rotate-1">
+                  Less WhatsApp Stress.
+                </span>
               </h1>
 
               {/* Body Text */}
               <p className="mt-5 sm:mt-6 text-gray-800 dark:text-gray-300 text-base sm:text-lg md:text-xl max-w-2xl leading-relaxed font-medium">
-                Bukka AI turns your existing WhatsApp into an autonomous sales machine.
-                Accept customer orders in Pidgin or English, calculate totals instantly, and get paid
-                with <span className="font-bold underline decoration-wavy decoration-[#FA6131]">zero fake transfer anxiety</span>.
+                Meet <span className="font-bold text-gray-950 dark:text-white">Auntie Chioma</span>, your AI sales assistant that answers customer enquiries, helps customers place orders, and keeps everything organised—so you can focus on making great food.
               </p>
 
               {/* Tactile CTAs */}
-              <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <Link
-                  to="/onboard"
-                  className="inline-flex items-center justify-center gap-2 font-display font-extrabold text-base sm:text-lg uppercase tracking-wide bg-[#FA6131] hover:bg-[#ff7244] text-white px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border-2 sm:border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
-                >
-                  <span>Set Up Your Bukka ⚡</span>
-                  <ArrowRight size={18} className="stroke-[3]" />
-                </Link>
-                <a
-                  href="#how-it-works"
-                  className="inline-flex items-center justify-center font-display font-bold text-base sm:text-lg text-black dark:text-white bg-white dark:bg-[#1C2230] hover:bg-gray-100 dark:hover:bg-[#262C3A] px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border-2 sm:border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
-                >
-                  See How It Works
-                </a>
+              <div className="mt-7 sm:mt-8 space-y-2.5">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <a
+                    href="https://wa.me/2349060251750?text=Hi%20Auntie%20Chioma,%20I%20want%20to%20see%20Bukka%20AI%20in%20action!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2.5 font-display font-extrabold text-base sm:text-lg uppercase tracking-wide bg-[#FA6131] hover:bg-[#ff7244] text-white px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border-2 sm:border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+                  >
+                    <MessageCircle size={20} className="stroke-[2.5]" />
+                    <span>See Bukka AI in Action</span>
+                  </a>
+                  <a
+                    href="#how-it-works"
+                    className="inline-flex items-center justify-center font-display font-bold text-base sm:text-lg text-black dark:text-white bg-white dark:bg-[#1C2230] hover:bg-gray-100 dark:hover:bg-[#262C3A] px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border-2 sm:border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+                  >
+                    How It Works
+                  </a>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium flex items-center gap-1.5 pt-0.5">
+                  <span className="inline-block w-2 h-2 rounded-full bg-[#25D366] animate-pulse"></span>
+                  <span>Opens live Auntie Chioma test experience in WhatsApp • Free demo ordering</span>
+                </p>
               </div>
 
-              {/* Neo-Brutalist Metrics & Proof Chips */}
+              {/* Truthful Neo-Brutalist Feature Chips */}
               <div className="mt-8 sm:mt-10 flex flex-wrap items-center gap-2.5 sm:gap-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-black dark:border-white bg-white dark:bg-[#1C2230] text-black dark:text-white shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] dark:shadow-[1.5px_1.5px_0px_0px_#fff]">
-                  <Users size={16} className="text-[#FA6131] stroke-[2.5]" />
-                  <span className="font-display font-extrabold text-xs sm:text-sm">120+ Active Bukkas</span>
+                  <MessageCircle size={16} className="text-[#25D366] stroke-[2.5]" />
+                  <span className="font-display font-extrabold text-xs sm:text-sm">WhatsApp-Based Ordering</span>
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-black dark:border-white bg-[#FFE600] text-black shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000]">
-                  <div className="flex items-center gap-0.5">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Star key={`star-${index}`} size={13} className="text-black fill-black" />
-                    ))}
-                  </div>
-                  <span className="font-display font-black text-xs sm:text-sm ml-0.5">4.9/5 Rating</span>
+                  <Sparkles size={15} className="text-black fill-black" />
+                  <span className="font-display font-extrabold text-xs sm:text-sm">English & Pidgin</span>
                 </div>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-black dark:border-white bg-[#2CD6EB] text-black shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000]">
-                  <Clock size={16} className="stroke-[2.5]" />
-                  <span className="font-display font-extrabold text-xs sm:text-sm">Avg 45s Order Time</span>
+                  <ShieldCheck size={16} className="stroke-[2.5]" />
+                  <span className="font-display font-extrabold text-xs sm:text-sm">Verified Payment Workflow</span>
                 </div>
               </div>
             </div>
@@ -304,14 +304,14 @@ const LandingPage = () => {
         <div className="animate-marquee whitespace-nowrap flex items-center gap-8 font-display font-black uppercase text-sm md:text-base tracking-wider">
           <span>✦ ZERO FAKE TRANSFERS</span>
           <span>✦ 100% PIDGIN & ENGLISH AI</span>
-          <span>✦ DIRECT BACHS SETTLEMENT</span>
+          <span>✦ DIRECT BANK SETTLEMENT</span>
           <span>✦ NO EXTRA HARDWARE NEEDED</span>
           <span>✦ SMART TABLE ACRYLIC QR</span>
           <span>✦ 45-SECOND CHECKOUT</span>
           <span>✦ BUILT FOR NIGERIAN CAMPUSES</span>
           <span>✦ ZERO FAKE TRANSFERS</span>
           <span>✦ 100% PIDGIN & ENGLISH AI</span>
-          <span>✦ DIRECT BACHS SETTLEMENT</span>
+          <span>✦ DIRECT BANK SETTLEMENT</span>
           <span>✦ NO EXTRA HARDWARE NEEDED</span>
           <span>✦ SMART TABLE ACRYLIC QR</span>
           <span>✦ 45-SECOND CHECKOUT</span>
@@ -362,7 +362,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* 2.5 Rock-Solid Financial Security & Bachs Settlement Strip */}
+      {/* 2.5 Rock-Solid Financial Security & Settlement Strip */}
       <section className="py-12 sm:py-16 bg-white dark:bg-[#151A24] border-b-3 border-black dark:border-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="rounded-2xl border-3 border-black dark:border-white bg-[#FAF7EE] dark:bg-[#1C2230] p-6 sm:p-10 shadow-[4px_4px_0px_0px_#000] sm:shadow-[6px_6px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#2CD6EB] sm:dark:shadow-[6px_6px_0px_0px_#2CD6EB]">
@@ -377,13 +377,13 @@ const LandingPage = () => {
                   Built to End Fake Transfer Panic Forever
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base font-medium mt-1.5 max-w-xl">
-                  Every food order is authenticated in real time through official CBN-licensed Bachs rails before printing to your kitchen.
+                  Every food order is authenticated in real time with instant verified bank alerts before printing to your kitchen.
                 </p>
               </div>
 
               <div className="flex items-center gap-2 self-start md:self-auto bg-white dark:bg-[#11141D] border-2 border-black dark:border-white rounded-xl px-4 py-2.5 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
-                <span className="text-xs font-display font-extrabold uppercase text-gray-600 dark:text-gray-400">Powered by</span>
-                <span className="font-display font-black text-sm text-[#00C3F7] tracking-wider">Bachs</span>
+                <span className="text-xs font-display font-extrabold uppercase text-gray-600 dark:text-gray-400">Security</span>
+                <span className="font-display font-black text-sm text-[#25D366] tracking-wider">100% Verified</span>
               </div>
             </div>
 
@@ -421,7 +421,7 @@ const LandingPage = () => {
                   Zero Holding of Cash
                 </h4>
                 <p className="text-xs text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
-                  You don't wait weeks for your payout. Automatic settlement on Bachs's verified cycle.
+                  You don't wait weeks for your payout. Automatic settlement straight to your registered bank account.
                 </p>
               </div>
 
@@ -456,7 +456,7 @@ const LandingPage = () => {
                 Turn WhatsApp into your fastest sales channel
               </h2>
               <p className="mt-6 text-gray-700 dark:text-gray-300 text-lg font-medium leading-relaxed">
-                We combine conversational AI, instant Bachs reconciliation, and live queue tracking so
+                We combine conversational AI, instant payment reconciliation, and live queue tracking so
                 you can focus on cooking hot meals, not texting back and forth.
               </p>
               
