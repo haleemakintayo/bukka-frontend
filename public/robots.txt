@@ -1,0 +1,19 @@
+# Allow all search engines and AI web crawlers
+User-agent: *
+Allow: /
+
+# OpenAI ChatGPT Browsing & Indexing Bots
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Major Search Engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://www.bukkaai.com/sitemap.xml
