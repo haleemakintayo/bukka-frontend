@@ -22,77 +22,6 @@ const CATEGORIES = [
 
 const POPULAR_QUICK_TAGS = ['Jollof Rice', 'Amala & Ewedu', 'Beef Suya', 'Shawarma', 'Catfish Pepper Soup', 'Fried Rice'];
 
-// ── SAMPLE BACKUP VENDORS (Graceful fallback if API is empty or offline) ────
-const FALLBACK_VENDORS = [
-  {
-    vendor_id: 'VEN-BASIRA',
-    business_name: "Iya Basira's Authentic Kitchen",
-    owner_name: 'Mrs. Basirat Adebayo',
-    slug: 'iya-basira',
-    description: 'Specializing in authentic smoky party jollof rice, hot pounded yam, tender goat meat, and fresh egusi soup.',
-    location: 'Faculty of Science Food Court',
-    hours: '8:00 AM - 7:30 PM',
-    rating: 4.9,
-    review_count: 142,
-    whatsapp_number: '2348012345678',
-    is_active: true,
-    category: 'Rice & Swallows',
-    prep_time: '10-20 min',
-    popular_items: ['Smoky Jollof Rice (₦1,500)', 'Pounded Yam & Egusi (₦1,200)', 'Fried Turkey (₦1,800)'],
-    badge: 'Popular 🔥'
-  },
-  {
-    vendor_id: 'VEN-SUYA-EXPRESS',
-    business_name: 'Campus Flame & Suya Hub',
-    owner_name: 'Mallam Haruna',
-    slug: 'flame-suya',
-    description: 'Fresh charcoal-grilled beef suya, chicken suya, peppered gizzard, and masa spiced to perfection with yaji.',
-    location: 'Sub Gate / Student Union Complex',
-    hours: '12:00 PM - 10:00 PM',
-    rating: 4.8,
-    review_count: 98,
-    whatsapp_number: '2348087654321',
-    is_active: true,
-    category: 'Suya & Grills',
-    prep_time: '15-25 min',
-    popular_items: ['Special Beef Suya (₦1,200)', 'Peppered Gizzard (₦1,500)', 'Full Grilled Chicken (₦4,500)'],
-    badge: 'Hot Seller ⚡'
-  },
-  {
-    vendor_id: 'VEN-MAMA-PUT',
-    business_name: 'Mama Put Deluxe',
-    owner_name: 'Grace Okafor',
-    slug: 'mama-put-deluxe',
-    description: 'Hot steaming white rice with designer ofada sauce, spicy ayamase, dodo, boiled eggs, and assorted meat.',
-    location: 'Main Gate Food Annex',
-    hours: '9:00 AM - 6:00 PM',
-    rating: 4.7,
-    review_count: 84,
-    whatsapp_number: '2348099887766',
-    is_active: true,
-    category: 'Rice & Swallows',
-    prep_time: '10-15 min',
-    popular_items: ['Ofada Rice & Ayamase (₦2,000)', 'Eba & Seafood Okro (₦1,400)', 'Fried Plantain (₦500)'],
-    badge: 'Student Favorite ⭐'
-  },
-  {
-    vendor_id: 'VEN-CHOP-CHOW',
-    business_name: 'Chop Chow Shawarma & Grills',
-    owner_name: 'Tobi Daniels',
-    slug: 'chop-chow',
-    description: 'Double sausage beef & chicken shawarma, grilled burgers, crispy french fries, and creamy milkshakes.',
-    location: 'Hall 3 Quadrangle',
-    hours: '11:00 AM - 11:00 PM',
-    rating: 4.9,
-    review_count: 215,
-    whatsapp_number: '2348055443322',
-    is_active: true,
-    category: 'Shawarma & Burgers',
-    prep_time: '15-20 min',
-    popular_items: ['Jumbo Chicken Shawarma (₦2,200)', 'Loaded Cheesy Fries (₦1,600)', 'Oreo Milkshake (₦1,200)'],
-    badge: 'Trending 🚀'
-  }
-];
 
 // ── SKELETON LOADER ─────────────────────────────────────────────────────────
 const VendorSkeleton = ({ viewMode }) => {
@@ -219,7 +148,7 @@ const QuickPreviewModal = ({ vendor, onClose, onQRClick }) => {
               <p className="text-[10px] uppercase font-display font-black text-gray-500 dark:text-gray-400">Rating</p>
               <p className="text-xs font-display font-black text-black dark:text-white mt-0.5 flex items-center justify-center gap-1">
                 <Star size={13} className="fill-[#FFE600] text-black stroke-[2]" />
-                {Number(vendor.rating || 4.8).toFixed(1)}
+                {vendor.rating ? Number(vendor.rating).toFixed(1) : 'New ✨'}
               </p>
             </div>
           </div>
@@ -309,7 +238,8 @@ const VendorGridCard = ({ vendor, onQRClick, onPreviewClick }) => {
 
   const handleShare = (e) => {
     e.stopPropagation();
-    const url = `https://bukkaai.com.ng/order/${vendor.slug || ''}`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.bukkaai.com';
+    const url = `${origin}/order/${vendor.slug || ''}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url);
       setCopied(true);
@@ -396,11 +326,11 @@ const VendorGridCard = ({ vendor, onQRClick, onPreviewClick }) => {
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] font-display font-bold text-black bg-[#BAE6FD] rounded-md px-2 py-0.5 border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000]">
               <Clock size={11} className="stroke-[2.5]" />
-              <span>{vendor.prep_time || '10-20 min'}</span>
+              <span>{vendor.hours || vendor.prep_time || 'Open Today'}</span>
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] font-display font-black text-black bg-[#FFE600] rounded-md px-2 py-0.5 border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000]">
               <Star size={11} className="fill-black stroke-[2]" />
-              <span>{Number(vendor.rating || 4.8).toFixed(1)}</span>
+              <span>{vendor.rating ? Number(vendor.rating).toFixed(1) : 'New ✨'}</span>
             </span>
           </div>
         </div>
@@ -487,7 +417,7 @@ const VendorListRow = ({ vendor, onQRClick, onPreviewClick }) => {
             </span>
             <span className="inline-flex items-center gap-1 bg-[#FFE600] text-black px-2 py-0.5 rounded border border-black font-display font-black text-[11px]">
               <Star size={11} className="fill-black stroke-[2]" />
-              {Number(vendor.rating || 4.8).toFixed(1)}
+              {vendor.rating ? Number(vendor.rating).toFixed(1) : 'New ✨'}
             </span>
           </div>
         </div>
@@ -569,20 +499,11 @@ const VendorDirectory = () => {
         search: debouncedSearch || undefined
       });
       const list = Array.isArray(data) ? data : data?.vendors || [];
-      if (list.length === 0 && !debouncedSearch) {
-        // Fallback to sample data for vibrant display
-        setVendors(FALLBACK_VENDORS);
-      } else {
-        setVendors(list);
-      }
+      setVendors(list);
     } catch (err) {
-      console.warn('Live API unavailable, using cached catalog:', err);
-      // If error occurs, fallback gracefully to mock items matching query
-      if (FALLBACK_VENDORS.length > 0) {
-        setVendors(FALLBACK_VENDORS);
-      } else {
-        setError(getApiErrorMessage(err, 'Could not load vendor catalog.'));
-      }
+      console.error('Error loading vendors from API:', err);
+      setError(getApiErrorMessage(err, 'Could not load campus vendors. Please check your connection.'));
+      setVendors([]);
     } finally {
       setLoading(false);
     }

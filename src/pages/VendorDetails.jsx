@@ -469,10 +469,10 @@ const VendorDetails = () => {
                 <div className="flex items-center gap-2 bg-[#0f1118] border border-white/5 rounded-xl px-3 py-2.5 mb-3">
                   <Link2 size={13} className="text-[#2CD6EB] shrink-0" />
                   <span className="text-[11px] font-mono text-gray-500 flex-1 truncate">
-                    bukkaai.com.ng/order/<strong className="text-[#2CD6EB]">{vendor.slug}</strong>
+                    bukkaai.com/order/<strong className="text-[#2CD6EB]">{vendor.slug}</strong>
                   </span>
                   <button
-                    onClick={() => handleCopy(`https://bukkaai.com.ng/order/${vendor.slug}`, 'link')}
+                    onClick={() => handleCopy(`https://bukkaai.com/order/${vendor.slug}`, 'link')}
                     className="text-gray-600 hover:text-[#2CD6EB] transition-colors"
                   >
                     {copied === 'link' ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}

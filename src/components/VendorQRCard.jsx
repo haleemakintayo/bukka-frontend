@@ -110,7 +110,7 @@ async function drawQRCard(canvas, { vendorName, slug, qrImageUrl, logoUrl, waUrl
   ctx.fillStyle = '#2CD6EB';
   ctx.font = `600 13px Inter, system-ui, monospace`;
   ctx.textAlign = 'center';
-  ctx.fillText(`bukkaai.com.ng/order/${slug}`, CARD_W / 2, PILL_Y + 27);
+  ctx.fillText(`bukkaai.com/order/${slug}`, CARD_W / 2, PILL_Y + 27);
   ctx.textAlign = 'left';
 
   // ── WhatsApp prompt ─────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ async function drawQRCard(canvas, { vendorName, slug, qrImageUrl, logoUrl, waUrl
   ctx.fillStyle = 'rgba(255,255,255,0.2)';
   ctx.font = `500 11px Inter, system-ui, sans-serif`;
   ctx.textAlign = 'center';
-  ctx.fillText('Powered by Bukka AI  ·  bukkaai.com.ng', CARD_W / 2, CARD_H - 26);
+  ctx.fillText('Powered by Bukka AI  ·  bukkaai.com', CARD_W / 2, CARD_H - 26);
   ctx.textAlign = 'left';
 }
 
@@ -208,7 +208,7 @@ const VendorQRCard = ({ slug, vendorName, onClose }) => {
   const [downloading, setDownloading] = useState(false);
   const [qrContentUrl, setQrContentUrl] = useState('');
 
-  const storeUrl  = `https://bukkaai.com.ng/order/${slug}`;
+  const storeUrl  = `https://bukkaai.com/order/${slug}`;
 
   const renderCard = useCallback(async () => {
     setStatus('loading');

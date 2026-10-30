@@ -10,65 +10,6 @@ import { adminService } from '../services/adminService';
 import { getApiErrorMessage } from '../services/api';
 import VendorQRCard from '../components/VendorQRCard';
 
-/* ── Fallback data for offline/demo ─────────────────────────────────── */
-const FALLBACK_ADMIN_VENDORS = [
-  {
-    id: 1,
-    vendor_id: 'VEN-BASIRA',
-    business_name: "Iya Basira's Authentic Kitchen",
-    owner_name: 'Mrs. Basirat Adebayo',
-    slug: 'iya-basira',
-    whatsapp_number: '2348012345678',
-    bank_details: 'GTBank 0123456789 (Basirat Adebayo)',
-    pairing_code: '4829',
-    subaccount_code: 'ACCT_basira892',
-    menu_count: 18,
-    is_active: true,
-    created_at: new Date(Date.now() - 7 * 86400000).toISOString()
-  },
-  {
-    id: 2,
-    vendor_id: 'VEN-FLAME-SUYA',
-    business_name: 'Campus Flame & Suya Hub',
-    owner_name: 'Mallam Haruna',
-    slug: 'flame-suya',
-    whatsapp_number: '2348087654321',
-    bank_details: 'Access Bank 9876543210 (Haruna Suya Ent)',
-    pairing_code: '9012',
-    subaccount_code: 'ACCT_suya901',
-    menu_count: 12,
-    is_active: true,
-    created_at: new Date(Date.now() - 14 * 86400000).toISOString()
-  },
-  {
-    id: 3,
-    vendor_id: 'VEN-MAMA-PUT',
-    business_name: 'Mama Put Deluxe',
-    owner_name: 'Grace Okafor',
-    slug: 'mama-put-deluxe',
-    whatsapp_number: '2348099887766',
-    bank_details: 'Zenith Bank 2233445566 (Grace Okafor)',
-    pairing_code: '3341',
-    subaccount_code: 'ACCT_grace334',
-    menu_count: 24,
-    is_active: true,
-    created_at: new Date(Date.now() - 21 * 86400000).toISOString()
-  },
-  {
-    id: 4,
-    vendor_id: 'VEN-CHOP-CHOW',
-    business_name: 'Chop Chow Shawarma & Grills',
-    owner_name: 'Tobi Daniels',
-    slug: 'chop-chow',
-    whatsapp_number: '2348055443322',
-    bank_details: 'UBA 1020304050 (Tobi Daniels Enterprises)',
-    pairing_code: '7721',
-    subaccount_code: 'ACCT_tobi772',
-    menu_count: 15,
-    is_active: false,
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString()
-  }
-];
 
 const normaliseVendor = (v) => ({
   ...v,
@@ -235,7 +176,7 @@ const QuickInspectDrawer = ({ vendor, onClose, onActivate, onQRClick, onNavigate
             )}
             <DetailField label="Storefront">
               <span style={{ color: '#2CD6EB', fontSize: 12, fontFamily: 'monospace' }}>
-                bukkaai.com.ng/order/{vendor.slug || '—'}
+                bukkaai.com/order/{vendor.slug || '—'}
               </span>
             </DetailField>
             {(vendor.bachs_destination_id || vendor.subaccount_code) && (
@@ -554,18 +495,15 @@ const VendorList = () => {
       if (activeTab === 'pending') params.is_active = false;
       const data = await adminService.getVendors(params);
       const list = Array.isArray(data) ? data : data?.vendors || [];
-      if (list.length === 0 && !searchQuery) {
-        setVendors(FALLBACK_ADMIN_VENDORS.map(normaliseVendor));
-      } else {
-        setVendors(list.map(normaliseVendor));
-      }
+      setVendors(list.map(normaliseVendor));
     } catch (err) {
-      console.warn('API error, using fallback data:', err);
-      setVendors(FALLBACK_ADMIN_VENDORS.map(normaliseVendor));
+      console.error('Admin API error loading vendors:', err);
+      setError(getApiErrorMessage(err, 'Failed to load vendors.'));
+      setVendors([]);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, searchQuery]);
+  }, [activeTab]);
 
   useEffect(() => { fetchVendors(); }, [fetchVendors]);
 
@@ -581,7 +519,7 @@ const VendorList = () => {
   /* ── Handlers ── */
   const handleCopyLink = (e, slug) => {
     e.stopPropagation();
-    const url = `https://bukkaai.com.ng/order/${slug}`;
+    const url = `https://bukkaai.com/order/${slug}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopiedSlug(slug);
       showToast('success', `Storefront link copied for ${slug}`);
