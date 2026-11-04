@@ -22,6 +22,23 @@ const CATEGORIES = [
 
 const POPULAR_QUICK_TAGS = ['Jollof Rice', 'Amala & Ewedu', 'Beef Suya', 'Shawarma', 'Catfish Pepper Soup', 'Fried Rice'];
 
+// ── GENERAL ORDERING & AI CONCIERGE CHAT NUMBER ─────────────────────────────
+export const GENERAL_WHATSAPP_NUMBER = '2347057865279';
+
+/**
+ * Builds the verified direct chat URL with a contextual prefilled order message.
+ * References the vendor's name, campus location, and slug so the WhatsApp assistant
+ * immediately knows which bukka menu the customer wants to order from.
+ */
+export const buildVendorChatUrl = (vendor) => {
+  const phone = GENERAL_WHATSAPP_NUMBER;
+  const vendorName = vendor?.business_name || 'Campus Bukka';
+  const slug = vendor?.slug || vendor?.vendor_id || 'campus';
+  const location = vendor?.location ? ` at ${vendor.location}` : '';
+  const message = `Hello Auntie Chioma! I want to check today's menu and order from *${vendorName}*${location} [ref:${slug}]. Please show me what is ready to eat!`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+};
+
 
 // ── SKELETON LOADER ─────────────────────────────────────────────────────────
 const VendorSkeleton = ({ viewMode }) => {
@@ -76,11 +93,7 @@ const QuickPreviewModal = ({ vendor, onClose, onQRClick }) => {
   const colorIdx = (vendor.business_name || '').charCodeAt(0) % bannerColors.length;
   const bannerBg = bannerColors[colorIdx];
 
-  const waNumber = (vendor.whatsapp_number || '').replace(/[^\d]/g, '');
-  const waMessage = encodeURIComponent(
-    `Hello! I would like to order from ${vendor.business_name}. Please share your current available menu.`
-  );
-  const waUrl = waNumber ? `https://wa.me/${waNumber}?text=${waMessage}` : null;
+  const waUrl = buildVendorChatUrl(vendor);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -175,17 +188,16 @@ const QuickPreviewModal = ({ vendor, onClose, onQRClick }) => {
 
           {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row gap-2.5">
-            {waUrl ? (
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-black font-display font-black text-sm uppercase tracking-wide rounded-xl py-3 border-3 border-black shadow-[4px_4px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
-              >
-                <MessageCircle size={18} className="fill-black text-[#25D366]" />
-                <span>Order on WhatsApp</span>
-              </a>
-            ) : null}
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-black font-display font-black text-sm uppercase tracking-wide rounded-xl py-3 border-3 border-black shadow-[4px_4px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+              title="Open WhatsApp chat with prefilled order request"
+            >
+              <MessageCircle size={18} className="fill-black text-[#25D366]" />
+              <span>Chat & Order on WhatsApp</span>
+            </a>
 
             {vendor.slug && (
               <Link
@@ -230,11 +242,7 @@ const VendorGridCard = ({ vendor, onQRClick, onPreviewClick }) => {
   const colorIdx = (vendor.business_name || '').charCodeAt(0) % bannerColors.length;
   const bannerBg = bannerColors[colorIdx];
 
-  const waNumber = (vendor.whatsapp_number || '').replace(/[^\d]/g, '');
-  const waMessage = encodeURIComponent(
-    `Hello! I want to order from ${vendor.business_name} [ref:${vendor.slug || 'bukka'}]`
-  );
-  const waUrl = waNumber ? `https://wa.me/${waNumber}?text=${waMessage}` : null;
+  const waUrl = buildVendorChatUrl(vendor);
 
   const handleShare = (e) => {
     e.stopPropagation();
@@ -338,17 +346,16 @@ const VendorGridCard = ({ vendor, onQRClick, onPreviewClick }) => {
 
       {/* Action CTAs */}
       <div className="px-5 pb-5 pt-0 flex gap-2">
-        {waUrl ? (
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba59] text-black font-display font-black text-xs uppercase tracking-wider rounded-xl py-2.5 border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
-          >
-            <MessageCircle size={14} className="fill-black text-[#25D366]" />
-            <span>WhatsApp</span>
-          </a>
-        ) : null}
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba59] text-black font-display font-black text-xs uppercase tracking-wider rounded-xl py-2.5 border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+          title={`Chat & order from ${vendor.business_name}`}
+        >
+          <MessageCircle size={14} className="fill-black text-[#25D366]" />
+          <span>Chat & Order</span>
+        </a>
 
         {vendor.slug ? (
           <Link
@@ -381,9 +388,7 @@ const VendorListRow = ({ vendor, onQRClick, onPreviewClick }) => {
     .toUpperCase()
     .slice(0, 2);
 
-  const waNumber = (vendor.whatsapp_number || '').replace(/[^\d]/g, '');
-  const waMessage = encodeURIComponent(`Hello! I want to order from ${vendor.business_name}`);
-  const waUrl = waNumber ? `https://wa.me/${waNumber}?text=${waMessage}` : null;
+  const waUrl = buildVendorChatUrl(vendor);
 
   return (
     <div className="group bg-white dark:bg-[#1C2230] border-3 border-black dark:border-white rounded-2xl p-4 transition-all duration-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-[5px_5px_0px_0px_#000] dark:shadow-[5px_5px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5">
@@ -441,17 +446,16 @@ const VendorListRow = ({ vendor, onQRClick, onPreviewClick }) => {
           <QrCode size={15} />
         </button>
 
-        {waUrl && (
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20ba59] text-black font-display font-black rounded-xl px-4 py-2.5 text-xs uppercase tracking-wide border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
-          >
-            <MessageCircle size={14} className="fill-black text-[#25D366]" />
-            <span>WhatsApp</span>
-          </a>
-        )}
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20ba59] text-black font-display font-black rounded-xl px-4 py-2.5 text-xs uppercase tracking-wide border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+          title={`Chat & order from ${vendor.business_name}`}
+        >
+          <MessageCircle size={14} className="fill-black text-[#25D366]" />
+          <span>Chat to Order</span>
+        </a>
 
         {vendor.slug && (
           <Link
@@ -864,6 +868,32 @@ const VendorDirectory = () => {
           onClose={() => setQrVendor(null)}
         />
       )}
+
+      {/* ── FLOATING AUNTIE CHIOMA CONCIERGE DOCK ──────────────────────────── */}
+      <aside aria-label="Auntie Chioma AI Concierge" className="fixed bottom-6 right-6 z-40">
+        <a
+          href={`https://wa.me/${GENERAL_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+            "Hello Auntie Chioma! I'm browsing the campus bukkas directory on Bukka AI. Can you help me find delicious food right now?"
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-3 bg-[#FFE600] hover:bg-[#ffd900] text-black font-display font-black text-xs sm:text-sm uppercase tracking-wide py-3 px-4 sm:px-5 rounded-2xl border-3 border-black shadow-[5px_5px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+          title="Chat with Auntie Chioma AI Assistant"
+        >
+          <div className="relative">
+            <div className="w-8 h-8 rounded-lg bg-[#25D366] border-2 border-black flex items-center justify-center text-black shadow-[1.5px_1.5px_0px_0px_#000]">
+              <MessageCircle size={16} className="fill-black text-[#25D366]" />
+            </div>
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#FA6131] border-2 border-black rounded-full animate-ping" />
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#FA6131] border-2 border-black rounded-full" />
+          </div>
+          <div className="text-left hidden sm:block">
+            <span className="block text-[10px] font-black tracking-widest text-black/70">HUNGRY ON CAMPUS?</span>
+            <span className="block font-black text-black">Chat with Auntie Chioma ⚡</span>
+          </div>
+          <span className="sm:hidden font-black">Chat AI ⚡</span>
+        </a>
+      </aside>
     </div>
   );
 };
