@@ -73,12 +73,22 @@ const LandingFooter = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/terms" className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:underline underline-offset-4 transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy#data-deletion" className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:underline underline-offset-4 transition-colors">
+                  Data Deletion
+                </Link>
+              </li>
+              <li>
                 <a 
-                  href="mailto:support@bukkaai.com" 
+                  href="mailto:hello@bukkaai.com" 
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 border-black dark:border-white bg-white dark:bg-[#1C2230] text-black dark:text-white shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-xs font-bold"
                 >
                   <Mail size={14} />
-                  support@bukkaai.com
+                  hello@bukkaai.com
                 </a>
               </li>
             </ul>

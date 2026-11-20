@@ -20,6 +20,7 @@ import AdvancedAnalytics from './pages/admin/AdvancedAnalytics';
 import MerchantFloatPayouts from './pages/admin/MerchantFloatPayouts';
 import VendorOnboardingGuide from './pages/public/VendorOnboardingGuide';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
+import TermsOfService from './pages/public/TermsOfService';
 import VendorDirectory from './pages/public/VendorDirectory';
 
 // Vendor PWA Components
@@ -76,6 +77,7 @@ function App() {
           <Route path="vendors" element={<VendorDirectory />} />
           <Route path="guide" element={<VendorOnboardingGuide />} />
           <Route path="privacy" element={<PrivacyPolicy />} />
+          <Route path="terms" element={<TermsOfService />} />
         </Route>
         
         {/* Student Flow (No navbar layout to maximize mobile screen real-estate) */}

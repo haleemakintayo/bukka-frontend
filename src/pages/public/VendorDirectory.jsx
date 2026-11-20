@@ -23,7 +23,7 @@ const CATEGORIES = [
 const POPULAR_QUICK_TAGS = ['Jollof Rice', 'Amala & Ewedu', 'Beef Suya', 'Shawarma', 'Catfish Pepper Soup', 'Fried Rice'];
 
 // ── GENERAL ORDERING & AI CONCIERGE CHAT NUMBER ─────────────────────────────
-export const GENERAL_WHATSAPP_NUMBER = '2347057865279';
+export const GENERAL_WHATSAPP_NUMBER = '2349068778689';
 
 /**
  * Builds the verified direct chat URL with a contextual prefilled order message.

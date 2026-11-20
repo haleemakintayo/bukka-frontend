@@ -1,197 +1,290 @@
-import React from 'react';
-import { ShieldCheck, Mail, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { ShieldCheck, Mail, ArrowLeft, Trash2, Lock, FileText } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+
+const CONTACT_EMAIL = 'hello@bukkaai.com';
 
 export default function PrivacyPolicy() {
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      const targetId = hash.replace('#', '');
+      const el = document.getElementById(targetId);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+      }
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [hash]);
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-bukka-dark-surface pt-24 pb-12 px-4 md:px-8 font-sans text-gray-900 dark:text-bukka-soft-white transition-colors">
+    <div className="min-h-screen bg-[#FAF7EE] dark:bg-[#11141D] py-12 px-4 md:px-8 font-sans text-gray-900 dark:text-gray-100 transition-colors">
       <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* Navigation Link Back */}
-        <div>
-          <Link 
-            to="/" 
-            className="inline-flex items-center gap-2 text-sm text-[#0F6B43] dark:text-bukka-cyan hover:underline font-semibold"
+        {/* Top Navigation */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-black dark:border-white bg-white dark:bg-[#1C2230] text-sm font-display font-extrabold text-black dark:text-white shadow-[3px_3px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
           >
             <ArrowLeft size={16} />
             Back to Home
           </Link>
+
+          <Link
+            to="/terms"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-black dark:border-white bg-[#FFE600] text-sm font-display font-extrabold text-black shadow-[3px_3px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+          >
+            <FileText size={16} />
+            Read Terms of Service
+          </Link>
         </div>
 
-        {/* Header Section */}
-        <div className="bg-[#0F6B43] rounded-3xl p-8 md:p-12 text-white shadow-sm flex flex-col md:flex-row items-center gap-6">
-          <div className="bg-white/10 p-4 rounded-2xl flex-shrink-0">
-            <ShieldCheck className="w-12 h-12 text-white" />
+        {/* Hero Banner */}
+        <div className="rounded-3xl border-3 border-black dark:border-white bg-[#25D366] p-8 md:p-10 text-black shadow-[6px_6px_0px_0px_#000] dark:shadow-[6px_6px_0px_0px_#fff] flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div className="bg-white p-4 rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] flex-shrink-0">
+            <ShieldCheck className="w-10 h-10 text-black" />
           </div>
           <div>
-            <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider mb-2">
-              Legal & Compliance
+            <span className="inline-block bg-black text-[#FFE600] text-xs px-3 py-1 rounded-md font-display font-black uppercase tracking-wider mb-3">
+              Legal &amp; Compliance • NDPA
             </span>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight lowercase">
-              privacy policy
+            <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-black">
+              Privacy Policy
             </h1>
-            <p className="text-emerald-50 max-w-2xl text-base mt-2">
-              Bukka AI is committed to protecting your privacy. This policy outlines how we collect, use, and protect your personal data in compliance with the Nigeria Data Protection Act (NDPA).
+            <p className="text-black/85 max-w-2xl text-base mt-2 font-medium leading-relaxed">
+              Bukka AI respects your privacy. This policy explains clearly what information we collect, how we use it to process food orders and run vendor tools, and how you can manage or delete your data.
+            </p>
+            <p className="text-xs font-display font-bold uppercase tracking-wider text-black/75 mt-3">
+              Effective Date: November 20, 2026 • Jurisdiction: Federal Republic of Nigeria
             </p>
           </div>
         </div>
 
-        {/* Content Section */}
-        <div className="bg-white dark:bg-bukka-card-surface rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 md:p-12">
-          <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed space-y-8">
-            <p className="text-lg font-medium">
-              Bukka AI (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting the privacy and security of your personal data. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you use our autonomous AI sales management platform, CRM services, and associated WhatsApp integration (collectively, the &quot;Services&quot;).
+        {/* Policy Body */}
+        <div className="rounded-3xl border-3 border-black dark:border-white bg-white dark:bg-[#1C2230] p-7 md:p-11 shadow-[6px_6px_0px_0px_#000] dark:shadow-[6px_6px_0px_0px_#fff] space-y-8 leading-relaxed text-gray-800 dark:text-gray-200">
+          <p className="text-base md:text-lg font-medium">
+            Bukka AI (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) provides conversational AI ordering assistance, online storefront menus, and merchant order-management tools (&quot;Services&quot;). This Privacy Policy applies to customers placing food orders via our website or WhatsApp integration, as well as food vendors operating stores on our platform, in compliance with the <strong>Nigeria Data Protection Act (NDPA)</strong>.
+          </p>
+
+          {/* 1. Data Controller & Contact */}
+          <section className="pt-6 border-t-2 border-black/10 dark:border-white/15 space-y-4">
+            <h2 className="text-xl md:text-2xl font-display font-black text-black dark:text-white">
+              1. Who We Are &amp; How to Contact Us
+            </h2>
+            <p>
+              Bukka AI acts as a Data Controller for registered vendor accounts and website operations, and processes customer order and messaging data to connect customers with their chosen food vendors.
             </p>
-            
-            <div className="bg-emerald-50 dark:bg-emerald-950/20 border-l-4 border-[#0F6B43] dark:border-bukka-cyan p-4 rounded-r-xl">
-              <p className="text-sm font-semibold text-[#0F6B43] dark:text-bukka-cyan">
-                This Privacy Policy is compliant with the Nigeria Data Protection Act (NDPA) and other applicable data protection regulations in Nigeria.
-              </p>
-            </div>
-
-            {/* Section 1 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">1. data controller</h2>
-              <p className="mb-4">
-                Bukka AI acts as both a Data Controller (for the information of vendors who sign up for our services) and a Data Processor (for the customer interaction data handled by our AI on behalf of vendors).
-              </p>
-              <p className="mb-4">
-                For any inquiries regarding this policy, you can contact our Data Protection Office at:
-              </p>
-              <div className="flex items-center gap-3 bg-gray-50 dark:bg-bukka-dark-surface/50 border border-gray-100 dark:border-gray-800 p-4 rounded-xl max-w-sm">
-                <Mail className="w-5 h-5 text-[#FF6600] flex-shrink-0" />
-                <div className="text-sm font-medium">
-                  <p className="text-gray-500 dark:text-gray-400">Email Address</p>
-                  <a href="mailto:privacy@bukkaai.com" className="text-[#FF6600] hover:underline font-bold">privacy@bukkaai.com</a>
-                </div>
+            <div className="inline-flex items-center gap-3 bg-[#FAF7EE] dark:bg-[#11141D] border-2 border-black dark:border-white p-4 rounded-xl shadow-[3px_3px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff]">
+              <Mail className="w-5 h-5 text-[#FA6131] flex-shrink-0" />
+              <div className="text-sm">
+                <p className="text-xs font-display font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                  Privacy &amp; Support Contact
+                </p>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="text-black dark:text-white hover:text-[#FA6131] underline font-display font-black text-base"
+                >
+                  {CONTACT_EMAIL}
+                </a>
               </div>
             </div>
+          </section>
 
-            {/* Section 2 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">2. information we collect</h2>
-              <p className="mb-4">
-                We collect information that is necessary to provide, optimize, and secure our Services.
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2 mt-4">
-                <div className="bg-gray-50 dark:bg-bukka-dark-surface/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50">
-                  <h3 className="font-bold text-gray-900 dark:text-bukka-soft-white text-base mb-2">Account Information</h3>
-                  <p className="text-sm">Name, email address, phone number, business name, and account credentials when you register.</p>
-                </div>
-                <div className="bg-gray-50 dark:bg-bukka-dark-surface/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50">
-                  <h3 className="font-bold text-gray-900 dark:text-bukka-soft-white text-base mb-2">Customer Interaction Data</h3>
-                  <p className="text-sm">Text, messages, transaction details, and order details processed by our AI automated agent (&quot;Auntie Chioma&quot;) via the WhatsApp Business API.</p>
-                </div>
-                <div className="bg-gray-50 dark:bg-bukka-dark-surface/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50">
-                  <h3 className="font-bold text-gray-900 dark:text-bukka-soft-white text-base mb-2">Payment and Billing Information</h3>
-                  <p className="text-sm">Metadata related to payments (processed via secure third-party payment gateways). We do not store full credit card details.</p>
-                </div>
-                <div className="bg-gray-50 dark:bg-bukka-dark-surface/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50">
-                  <h3 className="font-bold text-gray-900 dark:text-bukka-soft-white text-base mb-2">Technical Data</h3>
-                  <p className="text-sm">IP address, device type, operating system, and usage logs when interacting with our dashboard.</p>
-                </div>
-              </div>
-            </div>
+          {/* 2. Information We Collect */}
+          <section className="pt-6 border-t-2 border-black/10 dark:border-white/15 space-y-4">
+            <h2 className="text-xl md:text-2xl font-display font-black text-black dark:text-white">
+              2. Information We Collect
+            </h2>
+            <p>We collect only the information required to process food orders, route payments, and operate vendor storefronts:</p>
 
-            {/* Section 3 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">3. lawful basis for processing</h2>
-              <p className="mb-4">
-                In line with the NDPA, we only process personal data when we have a valid legal ground to do so:
-              </p>
-              <ul className="space-y-3 list-disc pl-5">
-                <li><strong>Consent:</strong> Where you or your customers have given explicit consent (e.g., opting into communication).</li>
-                <li><strong>Contractual Necessity:</strong> To fulfill our obligations in providing the Bukka AI platform to you.</li>
-                <li><strong>Legal Obligation:</strong> To comply with financial, regulatory, or legal requirements in Nigeria.</li>
-                <li><strong>Legitimate Interests:</strong> To prevent fraud, maintain system security, and improve our AI conversational capabilities.</li>
-              </ul>
-            </div>
-
-            {/* Section 4 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">4. how we use your information</h2>
-              <p className="mb-4">
-                We use the collected data to:
-              </p>
-              <ul className="space-y-3 list-disc pl-5">
-                <li>Provision, maintain, and optimize the Bukka AI conversational engine.</li>
-                <li>Analyze and train our automated sales agents to improve response accuracy (using anonymized metadata).</li>
-                <li>Process transactions and send billing notices.</li>
-                <li>Provide technical support and resolve Meta developer dashboard integration issues.</li>
-              </ul>
-            </div>
-
-            {/* Section 5 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">5. data retention</h2>
-              <p>
-                We retain personal data only for as long as necessary to fulfill the purposes outlined in this policy, or as required by law (such as financial record-keeping laws). When data is no longer required, it is securely deleted or anonymized.
-              </p>
-            </div>
-
-            {/* Section 6 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">6. data transfers and third parties</h2>
-              <p className="mb-4">
-                To deliver our services, we share data with trusted third parties, notably:
-              </p>
-              <ul className="space-y-3 list-disc pl-5 mb-4">
-                <li><strong>Meta Platforms, Inc.:</strong> Through the WhatsApp Business API integration to route messages.</li>
-                <li><strong>Cloud Infrastructure Providers:</strong> Secure servers where our database and AI models reside.</li>
-              </ul>
-              <div className="mt-6 p-6 bg-gray-50 dark:bg-bukka-dark-surface/20 rounded-2xl border border-gray-100 dark:border-gray-800">
-                <h3 className="font-bold text-gray-900 dark:text-bukka-soft-white text-base mb-2">Cross-Border Data Transfers</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="bg-[#FAF7EE] dark:bg-[#11141D] p-5 rounded-2xl border-2 border-black dark:border-white">
+                <h3 className="font-display font-black text-black dark:text-white text-base mb-1.5">
+                  Customer Order &amp; Contact Data
+                </h3>
                 <p className="text-sm">
-                  Some of our cloud infrastructure and integrations (like Meta) may host data outside of Nigeria. In accordance with the NDPA, we ensure that such transfers are made only to countries with adequate data protection laws or under strict standard contractual clauses that guarantee the safety of your data.
+                  Your name, phone number or WhatsApp identifier, selected vendor, order items, pickup or delivery preference, delivery area, street/hostel address, and optional delivery notes.
+                </p>
+              </div>
+
+              <div className="bg-[#FAF7EE] dark:bg-[#11141D] p-5 rounded-2xl border-2 border-black dark:border-white">
+                <h3 className="font-display font-black text-black dark:text-white text-base mb-1.5">
+                  Conversation &amp; Session Records
+                </h3>
+                <p className="text-sm">
+                  Messages exchanged with our ordering assistant on WhatsApp or supported chat channels, along with active cart and checkout status so your order flows accurately.
+                </p>
+              </div>
+
+              <div className="bg-[#FAF7EE] dark:bg-[#11141D] p-5 rounded-2xl border-2 border-black dark:border-white">
+                <h3 className="font-display font-black text-black dark:text-white text-base mb-1.5">
+                  Payment Transaction Metadata
+                </h3>
+                <p className="text-sm">
+                  Payment references, checkout IDs, amounts, and confirmation status (e.g., pending, paid, or failed). <strong>We never collect or store your card numbers, CVV, or bank PINs</strong>—card and transfer payments are handled directly by our licensed payment partners.
+                </p>
+              </div>
+
+              <div className="bg-[#FAF7EE] dark:bg-[#11141D] p-5 rounded-2xl border-2 border-black dark:border-white">
+                <h3 className="font-display font-black text-black dark:text-white text-base mb-1.5">
+                  Vendor &amp; Essential Technical Data
+                </h3>
+                <p className="text-sm">
+                  For merchants: store name, owner name, contact phone/chat ID, menu items, rider contacts, and bank payout details verified via payment partners. On the web, we use strictly functional browser storage (theme preference and authenticated session tokens) with no third-party ad trackers.
                 </p>
               </div>
             </div>
+          </section>
 
-            {/* Section 7 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">7. your rights under the ndpa</h2>
-              <p className="mb-4">
-                As a data subject in Nigeria, you have specific rights regarding your personal data:
-              </p>
-              <ul className="space-y-3 list-disc pl-5">
-                <li><strong>Right to Access:</strong> You can request copies of the personal data we hold about you.</li>
-                <li><strong>Right to Rectification:</strong> You can request that we correct inaccurate or incomplete information.</li>
-                <li><strong>Right to Erasure (&quot;Right to be Forgotten&quot;):</strong> You can request the deletion of your data under certain conditions.</li>
-                <li><strong>Right to Restrict or Object to Processing:</strong> You can object to how we process your data, including direct marketing.</li>
-                <li><strong>Right to Data Portability:</strong> You can request that we transfer your data to another organization.</li>
-                <li><strong>Right to Withdraw Consent:</strong> You can withdraw your consent at any time where consent is the basis of processing.</li>
-              </ul>
-              <p className="mt-4">
-                To exercise any of these rights, please contact us at <a href="mailto:support@bukkaai.com" className="text-[#FF6600] hover:underline font-bold">support@bukkaai.com</a>.
-              </p>
-            </div>
+          {/* 3. How We Use Your Information */}
+          <section className="pt-6 border-t-2 border-black/10 dark:border-white/15 space-y-3">
+            <h2 className="text-xl md:text-2xl font-display font-black text-black dark:text-white">
+              3. How We Use Your Information
+            </h2>
+            <p>We use personal data strictly for the following purposes:</p>
+            <ul className="space-y-2.5 list-disc pl-5">
+              <li>
+                <strong>Order Taking &amp; AI Assistance:</strong> Processing your chat messages through real-time automated language understanding so our assistant (&quot;Auntie Chioma&quot;) can answer menu questions, build your cart, and confirm order details. <em>We do not sell your conversations or use your personal chats to train public AI models.</em>
+              </li>
+              <li>
+                <strong>Order Preparation &amp; Delivery:</strong> Transmitting order items, contact numbers, and delivery instructions to your selected food vendor and their assigned delivery rider.
+              </li>
+              <li>
+                <strong>Order Status Notifications:</strong> Sending real-time updates when your payment is verified, accepted by the kitchen, ready for pickup, or out for delivery.
+              </li>
+              <li>
+                <strong>Payments &amp; Merchant Payouts:</strong> Confirming payment settlement and routing order funds to vendors through licensed payment processors.
+              </li>
+              <li>
+                <strong>Security, Fraud Prevention &amp; Support:</strong> Preventing duplicate or fraudulent orders, maintaining reliable service performance, and resolving customer or vendor inquiries sent to {CONTACT_EMAIL}.
+              </li>
+            </ul>
+          </section>
 
-            {/* Section 8 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">8. security of your data</h2>
-              <p>
-                We implement robust technical and organizational security measures—including data encryption in transit and at rest, firewalls, and strict access controls to protect your information from unauthorized access, alteration, or disclosure.
-              </p>
-            </div>
+          {/* 4. Lawful Basis Under NDPA */}
+          <section className="pt-6 border-t-2 border-black/10 dark:border-white/15 space-y-3">
+            <h2 className="text-xl md:text-2xl font-display font-black text-black dark:text-white">
+              4. Lawful Basis for Processing (NDPA)
+            </h2>
+            <p>Under the Nigeria Data Protection Act, we process personal data only where at least one lawful basis applies:</p>
+            <ul className="space-y-2 list-disc pl-5">
+              <li><strong>Contractual Necessity:</strong> To take, process, confirm, and fulfill food orders you initiate, or to provide vendor storefront services.</li>
+              <li><strong>Consent:</strong> When you initiate a WhatsApp conversation or submit your information at checkout or vendor onboarding.</li>
+              <li><strong>Legal Obligation:</strong> To comply with applicable Nigerian financial, tax, and regulatory requirements.</li>
+              <li><strong>Legitimate Interests:</strong> To prevent fake payment alerts, fraud, and system abuse while keeping the service responsive.</li>
+            </ul>
+          </section>
 
-            {/* Section 9 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">9. remedies and redress</h2>
-              <p>
-                If you believe your data protection rights have been violated, you have the right to lodge a complaint with the Nigeria Data Protection Commission (NDPC). However, we encourage you to contact us first to resolve any concerns directly.
-              </p>
-            </div>
+          {/* 5. How We Share Information */}
+          <section className="pt-6 border-t-2 border-black/10 dark:border-white/15 space-y-3">
+            <h2 className="text-xl md:text-2xl font-display font-black text-black dark:text-white">
+              5. How We Share Information
+            </h2>
+            <p>We never sell your personal information. We share data only as needed to run the Services with:</p>
+            <ul className="space-y-2.5 list-disc pl-5">
+              <li>
+                <strong>Selected Food Vendors &amp; Dispatch Riders:</strong> The store you order from (and its assigned rider, for deliveries) receives your name, phone number, order items, and delivery address to fulfill your meal.
+              </li>
+              <li>
+                <strong>Messaging Platform Providers:</strong> Meta Platforms, Inc. (WhatsApp Business Platform) and supported messaging channels to send and receive messages you initiate.
+              </li>
+              <li>
+                <strong>Licensed Payment &amp; Banking Partners:</strong> Third-party payment gateways that securely process checkout payments, resolve vendor bank accounts, and disburse vendor payouts.
+              </li>
+              <li>
+                <strong>Cloud Hosting &amp; AI Inference Providers:</strong> Trusted infrastructure and AI processing vendors operating under confidentiality obligations solely to host our application and interpret order messages in real time.
+              </li>
+              <li>
+                <strong>Legal &amp; Regulatory Authorities:</strong> Where strictly required by Nigerian law, court order, or fraud investigation.
+              </li>
+            </ul>
+            <p className="text-sm text-gray-600 dark:text-gray-400 pt-1">
+              Some infrastructure and messaging partners operate outside Nigeria. Where cross-border transfers occur, we rely on appropriate contractual and security safeguards required under the NDPA.
+            </p>
+          </section>
 
-            {/* Section 10 */}
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-bukka-soft-white lowercase mb-3">10. changes to this policy</h2>
-              <p>
-                We may update this Privacy Policy from time to time to reflect changes in our technology or Nigerian legal frameworks. We will notify you of any material changes by posting the new policy on this page with an updated effective date.
+          {/* 6. Data Retention & Security */}
+          <section className="pt-6 border-t-2 border-black/10 dark:border-white/15 space-y-3">
+            <h2 className="text-xl md:text-2xl font-display font-black text-black dark:text-white flex items-center gap-2">
+              <Lock className="w-5 h-5 text-[#2CD6EB]" />
+              6. Data Retention &amp; Security
+            </h2>
+            <p>
+              We retain order, chat, and vendor account records only for as long as necessary to fulfill orders, support active storefronts, resolve disputes, or meet statutory Nigerian financial record-keeping obligations. All traffic is encrypted in transit (HTTPS/TLS), webhook requests are cryptographically verified, and administrative access is protected by authenticated role controls.
+            </p>
+          </section>
+
+          {/* 7. Your Rights Under the NDPA */}
+          <section className="pt-6 border-t-2 border-black/10 dark:border-white/15 space-y-3">
+            <h2 className="text-xl md:text-2xl font-display font-black text-black dark:text-white">
+              7. Your Privacy Rights
+            </h2>
+            <p>Under the NDPA, you have the right to:</p>
+            <ul className="space-y-2 list-disc pl-5">
+              <li>Request access to a copy of the personal data we hold about you.</li>
+              <li>Request correction of inaccurate or incomplete details.</li>
+              <li>Request deletion of your personal data (see instructions below).</li>
+              <li>Object to or restrict certain processing, or withdraw consent where applicable.</li>
+              <li>Lodge a complaint with the <strong>Nigeria Data Protection Commission (NDPC)</strong> if you believe your rights have been infringed.</li>
+            </ul>
+          </section>
+
+          {/* 8. User Data Deletion Instructions (#data-deletion) */}
+          <section
+            id="data-deletion"
+            className="scroll-mt-28 pt-6 border-t-2 border-black/10 dark:border-white/15"
+          >
+            <div className="rounded-2xl border-3 border-black dark:border-white bg-[#FEF08A] dark:bg-[#11141D] p-6 md:p-8 text-black dark:text-white shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#FFE600] space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-[#FA6131] text-white border-2 border-black">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl md:text-2xl font-display font-black">
+                  8. User Data Deletion Instructions
+                </h2>
+              </div>
+              <p className="font-medium">
+                You can request deletion of your Bukka AI profile, WhatsApp conversation logs, and associated personal data at any time by following these steps:
               </p>
+              <ol className="list-decimal pl-5 space-y-2 font-medium">
+                <li>
+                  Send an email to{' '}
+                  <a
+                    href={`mailto:${CONTACT_EMAIL}?subject=Data%20Deletion%20Request`}
+                    className="underline font-display font-black text-[#FA6131] dark:text-[#FFE600]"
+                  >
+                    {CONTACT_EMAIL}
+                  </a>{' '}
+                  with the subject line <strong>&quot;Data Deletion Request&quot;</strong>.
+                </li>
+                <li>
+                  Include the <strong>phone number / WhatsApp number</strong> (for customers) or <strong>store name and registered phone number</strong> (for vendors) so we can verify account ownership and locate your records.
+                </li>
+                <li>
+                  Once verified, we will permanently delete or anonymize your personal profile, active sessions, and chat records within <strong>30 days</strong>, except where limited payment or transaction records must be retained temporarily for statutory accounting, fraud prevention, or dispute resolution under Nigerian law.
+                </li>
+              </ol>
             </div>
-          </div>
+          </section>
+
+          {/* 9. Changes */}
+          <section className="pt-6 border-t-2 border-black/10 dark:border-white/15 space-y-2">
+            <h2 className="text-xl md:text-2xl font-display font-black text-black dark:text-white">
+              9. Updates to This Policy
+            </h2>
+            <p>
+              We may update this Privacy Policy from time to time to reflect improvements to our Services or updates to Nigerian data protection regulations. Changes take effect once posted on this page with an updated effective date. For questions, reach us at{' '}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="font-bold underline text-[#FA6131]">
+                {CONTACT_EMAIL}
+              </a>
+              .
+            </p>
+          </section>
         </div>
-
       </div>
     </div>
   );
