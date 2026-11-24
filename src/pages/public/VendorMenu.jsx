@@ -167,8 +167,10 @@ const VendorMenu = () => {
   const getCategoryEmoji = (categoryName) => {
     const emojis = {
       'Main': '🍚', 'Rice': '🍚', 'Swallows': '🍲', 'Swallows & Rice': '🍚',
+      'Noodles': '🍜', 'Spaghetti': '🍝', 'Macaroni': '🧀', 'Yam & Plantain': '🍠',
+      'Special Breakfast': '🥞', 'Pepper Soup': '🍲', 'Signature Specials': '👑',
       'Proteins': '🍗', 'Protein': '🍗', 'Meat': '🍖', 'Proteins & Meats': '🍗',
-      'Sides': '🍟', 'Extras': '🍟', 'Quick Bites & Sides': '🍟',
+      'Sides': '🍟', 'Extras': '🍗', 'Quick Bites & Sides': '🍟',
       'Drinks': '🥤', 'Drink': '🥤', 'Chilled Drinks': '🥤',
       'Fast Food': '🍔', 'Breakfast': '🥞', 'Suya': '🔥'
     };
